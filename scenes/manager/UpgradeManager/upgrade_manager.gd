@@ -41,10 +41,13 @@ func choose_upgrades(count: int) -> Array[Upgrade]:
 	var result: Array[Upgrade] = []
 	if upgrade_pool == null or upgrade_pool.is_empty():
 		return result
-	# Make a shallow copy and shuffle to get unique choices
+	# Filter out upgrades that reached their max quantity
 	var pool: Array[Upgrade] = []
 	for u in upgrade_pool:
-		pool.append(u)
+		if _is_upgrade_available(u):
+			pool.append(u)
+	if pool.is_empty():
+		return result
 	# Simple Fisher-Yates shuffle
 	for i in range(pool.size() - 1, 0, -1):
 		var j = randi() % (i + 1)
@@ -68,6 +71,33 @@ func _apply_upgrade(chosen_upgrade: Upgrade) -> void:
 	else:
 		current_upgrades[chosen_upgrade.id]["quantity"] += 1
 	acquired_list.append(chosen_upgrade)
+
+	# If this upgrade reached its max quantity, remove it from the pool
+	var qty: int = int(current_upgrades[chosen_upgrade.id]["quantity"])
+	var maxq: int = 0
+	if chosen_upgrade != null and chosen_upgrade.has_method("get"):
+		var v = chosen_upgrade.get("max_quantity")
+		if typeof(v) == TYPE_INT:
+			maxq = v
+	if maxq > 0 and qty >= maxq:
+		upgrade_pool = upgrade_pool.filter(func(u: Upgrade): return u.id != chosen_upgrade.id)
+
+func _is_upgrade_available(u: Upgrade) -> bool:
+	if u == null:
+		return false
+	var maxq: int = 0
+	if u.has_method("get"):
+		var v = u.get("max_quantity")
+		if typeof(v) == TYPE_INT:
+			maxq = v
+	if maxq <= 0:
+		return true
+	var qty: int = 0
+	if current_upgrades.has(u.id):
+		var entry = current_upgrades[u.id]
+		if typeof(entry) == TYPE_DICTIONARY and entry.has("quantity"):
+			qty = int(entry["quantity"])
+	return qty < maxq
 
 func on_upgrade():
 	# Optional manual trigger also uses interactive flow

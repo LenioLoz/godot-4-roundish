@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_tl11y")
 id = "fromsoftwatre_dodge"
+max_quantity = 1
 name = "Dodge From Software"
 description = "+ On dodge you can't get hit
 - Dodge cooldown gets increased twice"
