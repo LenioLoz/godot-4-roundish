@@ -7,10 +7,13 @@ var pos:Vector2
 var rotat:float
 var dir:float
 var speed = 200
+@export var base_damage: int = 5
+var damage_mul: float = 1.0
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	hitbox_component.damage = 5
+	# Compute damage at runtime to allow weapon/player modifiers
+	hitbox_component.damage = int(round(base_damage * damage_mul))
 	global_position = pos
 	global_rotation = rotat
 	$Timer.start()

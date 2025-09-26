@@ -1,8 +1,11 @@
 extends CharacterBody2D
 
 @onready var ammo: AmmoComponent = null
+@onready var _fire_timer: Timer = null
 
 @export var bullet_path: PackedScene
+@export var base_fire_cooldown_s: float = 0.22
+@export var full_auto_fire_cooldown_s: float = 0.12
 
 var player: Node2D
 var direction: Vector2
@@ -23,6 +26,11 @@ func _ready() -> void:
 		ammo.reload_started.connect(on_reload_started)
 	if not ammo.reload_finished.is_connected(on_reload_finished):
 		ammo.reload_finished.connect(on_reload_finished)
+	# Fire cooldown timer
+	_fire_timer = Timer.new()
+	_fire_timer.one_shot = true
+	add_child(_fire_timer)
+	_fire_timer.timeout.connect(func(): can_shoot = true)
 
 func _input(event: InputEvent) -> void:
 	if ammo == null:
@@ -49,7 +57,12 @@ func _process(delta: float) -> void:
 	else:
 		$Sprite2D.flip_v = false
 
-	if Input.is_action_just_pressed("attack") and can_shoot and ammo and ammo.can_fire() and not _weapons_locked():
+	var want_shoot := false
+	if _is_full_auto():
+		want_shoot = Input.is_action_pressed("attack")
+	else:
+		want_shoot = Input.is_action_just_pressed("attack")
+	if want_shoot and can_shoot and ammo and ammo.can_fire() and not _weapons_locked():
 		fire()
 		ammo.consume(1)
 
@@ -75,7 +88,8 @@ func fire() -> void:
 
 	# Ensure bullet scene is set
 	if bullet_path == null:
-		can_shoot = true
+		# If no bullet scene, re-arm by cooldown
+		_arm_after_cooldown()
 		return
 
 	var bullet = bullet_path.instantiate()
@@ -85,24 +99,28 @@ func fire() -> void:
 	# Apply player upgrades to bullet (speed and size)
 	var speed_mul := 1.0
 	var size_mul := 1.0
+	var dmg_mul := 1.0
 	var ply = player
 	if ply and ply.has_method("get_bullet_speed_multiplier"):
 		speed_mul = ply.get_bullet_speed_multiplier()
 	if ply and ply.has_method("get_bullet_size_multiplier"):
 		size_mul = ply.get_bullet_size_multiplier()
+	if ply and ply.has_method("get_bullet_damage_multiplier"):
+		dmg_mul = ply.get_bullet_damage_multiplier()
 
 	bullet.speed = float(bullet.speed) * speed_mul
 	# Scale entire bullet node to affect visuals and collisions without mutating shared shapes
 	if bullet is Node2D:
 		(bullet as Node2D).scale *= Vector2(size_mul, size_mul)
+	# Apply damage multiplier (rifle_bullet defines `damage_mul`)
+	if bullet.has_method("set"):
+		bullet.set("damage_mul", dmg_mul)
 
 	# Spawn bullet in the current scene root so it doesn't inherit player movement
 	get_tree().current_scene.add_child(bullet)
 
-	# poczekaj aż animacja się skończy (jeśli odtwarzana)
-	if anim_player and anim_player.is_playing():
-		await anim_player.animation_finished
-	can_shoot = true
+	# Arm again after a cooldown (animation may still be playing visually)
+	_arm_after_cooldown()
 
 func on_reload_started():
 	$"../AnimationPlayer".play("reload")
@@ -116,4 +134,23 @@ func _weapons_locked() -> bool:
 	var ply = player
 	if ply and ply.has_method("are_weapons_disabled"):
 		return ply.are_weapons_disabled()
+	return false
+
+func _arm_after_cooldown() -> void:
+	var cd := base_fire_cooldown_s
+	if _is_full_auto():
+		cd = full_auto_fire_cooldown_s
+		var ply = player
+		if ply and ply.has_method("get_fire_cooldown_multiplier"):
+			cd *= ply.get_fire_cooldown_multiplier()
+	if _fire_timer:
+		can_shoot = false
+		_fire_timer.start(cd)
+	else:
+		can_shoot = true
+
+func _is_full_auto() -> bool:
+	var ply = player
+	if ply and ply.has_method("is_full_auto_enabled"):
+		return ply.is_full_auto_enabled()
 	return false

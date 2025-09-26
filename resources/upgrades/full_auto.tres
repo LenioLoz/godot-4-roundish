@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3 uid="uid://bnpyoqbcd3mpl"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_7qede"]
+
+[resource]
+script = ExtResource("1_7qede")
+id = "full_auto"
+name = "Full_Auto"
+description = "+Allow your gun to shoot in full-auto mode 
+-Your bullets do less damage 
+-Your bullets move slower
+
+"
