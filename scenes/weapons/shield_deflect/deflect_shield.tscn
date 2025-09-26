@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3 uid="uid://cbclon7fitu2v"]
+
+[ext_resource type="Texture2D" uid="uid://c53feid6nkdlr" path="res://assets/deflect.png" id="1_t2vfh"]
+[ext_resource type="Script" uid="uid://cwut52a8nina0" path="res://scenes/weapons/shield_deflect/deflect_shield.gd" id="2_scr"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_rtekt"]
+radius = 7.0
+height = 44.0
+
+[node name="DeflectShield" type="Node2D"]
+script = ExtResource("2_scr")
+shield_node_path = NodePath("Sprite2D")
+area_path = NodePath("Sprite2D/Area2D")
+sprite_path = NodePath("Sprite2D")
+rotation_offset_rad = -0.5
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+position = Vector2(-6, -2)
+scale = Vector2(1, 0.986)
+texture = ExtResource("1_t2vfh")
+offset = Vector2(-5, 1)
+
+[node name="Area2D" type="Area2D" parent="Sprite2D"]
+position = Vector2(0, -11.6633)
+scale = Vector2(1, 1.0142)
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Sprite2D/Area2D"]
+position = Vector2(6, 13.5)
+shape = SubResource("CapsuleShape2D_rtekt")

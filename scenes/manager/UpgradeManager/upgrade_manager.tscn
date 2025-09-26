@@ -1,0 +1,13 @@
+[gd_scene load_steps=8 format=3 uid="uid://bwghqvp08vltk"]
+
+[ext_resource type="Script" uid="uid://2mavorefxqi1" path="res://scenes/manager/UpgradeManager/upgrade_manager.gd" id="1_5713k"]
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="2_ndhdc"]
+[ext_resource type="Resource" uid="uid://c85irsaeergha" path="res://resources/upgrades/bullet_speed.tres" id="3_uvsc7"]
+[ext_resource type="Resource" uid="uid://cpixp5dbyof8u" path="res://resources/upgrades/bullet_size.tres" id="4_uvsc7"]
+[ext_resource type="Resource" uid="uid://8styumt44sl0" path="res://resources/upgrades/FromSoftware_dodge.tres" id="5_6vwce"]
+[ext_resource type="Resource" uid="uid://wvinn6bvaue1" path="res://resources/upgrades/long_dodge.tres" id="6_oifml"]
+[ext_resource type="Resource" uid="uid://cp6eiir462sqb" path="res://resources/upgrades/heavy_bullets.tres" id="7_oifml"]
+
+[node name="UpgradeManager" type="Node"]
+script = ExtResource("1_5713k")
+upgrade_pool = Array[ExtResource("2_ndhdc")]([ExtResource("3_uvsc7"), ExtResource("4_uvsc7"), ExtResource("5_6vwce"), ExtResource("6_oifml"), ExtResource("7_oifml")])

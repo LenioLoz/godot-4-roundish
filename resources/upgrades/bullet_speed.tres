@@ -1,0 +1,10 @@
+[gd_resource type="Resource" load_steps=2 format=3 uid="uid://c85irsaeergha"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_574ca"]
+
+[resource]
+script = ExtResource("1_574ca")
+id = "bullet_speed"
+name = "Quick Bullets"
+description = "+ Increasees bullet speed by 10%
+- Bullet size gets decreased by 10%"

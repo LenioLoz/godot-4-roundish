@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://2myv67uf3e0o"]
+
+[ext_resource type="Script" uid="uid://bnwy45mr8ig0y" path="res://scenes/component/deflect_component/deflect_component.gd" id="1_1"]
+
+[node name="DeflectComponent" type="Area2D"]
+script = ExtResource("1_1")
+active = true

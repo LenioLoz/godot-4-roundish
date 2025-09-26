@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3 uid="uid://8styumt44sl0"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_tl11y"]
+
+[resource]
+script = ExtResource("1_tl11y")
+id = "fromsoftwatre_dodge"
+name = "Dodge From Software"
+description = "+ On dodge you can't get hit
+- Dodge cooldown gets increased twice"

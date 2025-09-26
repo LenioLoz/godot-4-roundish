@@ -1,0 +1,56 @@
+[gd_scene load_steps=12 format=3 uid="uid://cyuuxlnyce4kr"]
+
+[ext_resource type="Texture2D" uid="uid://dxt1df5yq7lby" path="res://scenes/game_objects/enemy/tile_0109.png" id="1_cnacv"]
+[ext_resource type="PackedScene" uid="uid://dyenr5xho7ynh" path="res://scenes/component/flash_on_hit/flash_on_hit.tscn" id="1_jlij7"]
+[ext_resource type="PackedScene" uid="uid://5rkvw8by2tkc" path="res://scenes/component/healt_component/health_component.tscn" id="1_s1krt"]
+[ext_resource type="PackedScene" uid="uid://d2s7e18aseul7" path="res://scenes/component/hurtbox_component/hurtbox_component.tscn" id="2_cigre"]
+[ext_resource type="Shader" uid="uid://dssphhvhxxp0" path="res://scenes/shaders/flash_tint.gdshader" id="3_bt8cw"]
+[ext_resource type="Script" uid="uid://bjapyhrx3kx0a" path="res://scenes/game_objects/enemy/enemy.gd" id="6_enemy"]
+[ext_resource type="PackedScene" uid="uid://2myv67uf3e0o" path="res://scenes/component/deflect_component/deflect_component.tscn" id="7_hmixd"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_jlij7"]
+radius = 14.0357
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hmixd"]
+shader = ExtResource("3_bt8cw")
+shader_parameter/tint = Color(0.6, 0.8, 1, 1)
+shader_parameter/desaturate = 0.0
+shader_parameter/flash = 0.0
+shader_parameter/flash_color = Vector3(1, 1, 1)
+shader_parameter/opacity = 1.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_cigre"]
+radius = 5.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_o43w3"]
+radius = 18.0
+
+[node name="Enemy" type="CharacterBody2D"]
+script = ExtResource("6_enemy")
+
+[node name="HealthComponent" parent="." instance=ExtResource("1_s1krt")]
+
+[node name="HurtboxComponent" parent="." node_paths=PackedStringArray("health_component") instance=ExtResource("2_cigre")]
+collision_layer = 3
+collision_mask = 3
+health_component = NodePath("../HealthComponent")
+debug_log = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent"]
+shape = SubResource("CircleShape2D_jlij7")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+material = SubResource("ShaderMaterial_hmixd")
+texture = ExtResource("1_cnacv")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 3)
+shape = SubResource("CircleShape2D_cigre")
+
+[node name="FlashOnHit" parent="." instance=ExtResource("1_jlij7")]
+
+[node name="DeflectComponent" parent="." instance=ExtResource("7_hmixd")]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DeflectComponent"]
+visible = false
+shape = SubResource("CircleShape2D_o43w3")

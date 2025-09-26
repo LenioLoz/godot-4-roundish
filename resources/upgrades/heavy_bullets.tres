@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3 uid="uid://cp6eiir462sqb"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_vn7iv"]
+
+[resource]
+script = ExtResource("1_vn7iv")
+id = "long_dodge"
+name = "Long Jump"
+description = "+Increase dodge lenght
+-Increase dodge cooldown"

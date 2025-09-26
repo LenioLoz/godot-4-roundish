@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://tphb2hivmyrm"]
+
+[ext_resource type="Script" uid="uid://6el51vu5dl8p" path="res://scenes/component/ammo_component/ammo_component.gd" id="1_g0qw3"]
+
+[node name="AmmoComponent" type="Node"]
+script = ExtResource("1_g0qw3")
+metadata/_custom_type_script = "uid://6el51vu5dl8p"

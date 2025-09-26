@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://csqbvabskmngn"]
+
+[ext_resource type="Script" uid="uid://di0gcrqd1xcc7" path="res://scenes/weapons/bullets/rifle_bullet/rifle_bullet_body.gd" id="1_05cu6"]
+[ext_resource type="Texture2D" uid="uid://r6dw0lk0xa58" path="res://scenes/weapons/bullets/rifle_bullet/RifleAmmoBig.png" id="1_36sfp"]
+[ext_resource type="PackedScene" uid="uid://dtw2n38us4cyw" path="res://scenes/component/hitbox_component/hitbox_component.tscn" id="2_05cu6"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_oagp3"]
+size = Vector2(10, 4)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_36sfp"]
+size = Vector2(10, 4)
+
+[node name="RifleBulletBody" type="CharacterBody2D"]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_05cu6")
+
+[node name="MyHitboxComponent" parent="." instance=ExtResource("2_05cu6")]
+collision_layer = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="MyHitboxComponent"]
+shape = SubResource("RectangleShape2D_oagp3")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_36sfp")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.5, 0.5)
+texture = ExtResource("1_36sfp")
+
+[node name="Timer" type="Timer" parent="."]
+wait_time = 3.0

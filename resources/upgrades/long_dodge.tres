@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3 uid="uid://wvinn6bvaue1"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_w2esb"]
+
+[resource]
+script = ExtResource("1_w2esb")
+id = "heavy_bullets"
+name = "Heavy Bullets"
+description = "Bullets do more damage
+"
