@@ -5,6 +5,7 @@
 [resource]
 script = ExtResource("1_7qede")
 id = "full_auto"
+max_quantity = 1
 name = "Full_Auto"
 description = "+Allow your gun to shoot in full-auto mode 
 -Your bullets do less damage 
