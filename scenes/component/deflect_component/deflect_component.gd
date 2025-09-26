@@ -13,7 +13,7 @@ class_name DeflectComponent
 @export var flash_duration: float = 0.2
 
 # Active state visual (constant tint when deflect is active)
-var _active: bool = true
+var _active: bool = false
 @export var active: bool:
 	set(value):
 		if _active == value:

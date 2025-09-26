@@ -14,6 +14,7 @@ var _active_shield: DeflectShield = null
 var upgrades: Array[Upgrade] = []
 var bullet_speed_multiplier: float = 1.0
 var bullet_size_multiplier: float = 1.0
+var bullet_damage_multiplier: float = 1.0
 var dodge_speed_multiplier: float = 1.0
 @export var dodge_cooldown_s: float = 0.6
 var dodge_invulnerable: bool = false
@@ -25,6 +26,8 @@ var _dodge_on_cooldown: bool = false
 @onready var _deflect_cd_timer: Timer = null
 var _deflect_on_cooldown: bool = false
 var weapons_disabled: bool = false
+var full_auto_enabled: bool = false
+var fire_cooldown_multiplier: float = 1.0
 
 func _ready() -> void:
 	# Connect the animation finished signal to handle the end of the dodge
@@ -281,9 +284,12 @@ func apply_upgrades() -> void:
 	# Reset to base values
 	bullet_speed_multiplier = 1.0
 	bullet_size_multiplier = 1.0
+	bullet_damage_multiplier = 1.0
 	dodge_speed_multiplier = 1.0
 	dodge_cooldown_s = 0.6
 	dodge_invulnerable = false
+	full_auto_enabled = false
+	fire_cooldown_multiplier = 1.0
 	# Apply all upgrades cumulatively
 	for upg in upgrades:
 		match upg.id:
@@ -293,12 +299,20 @@ func apply_upgrades() -> void:
 			"big_bullets":
 				bullet_size_multiplier *= 1.1
 				bullet_speed_multiplier *= 0.9
+			"heavy_bullets":
+				bullet_damage_multiplier *= 1.2
 			"long_dodge":
 				dodge_speed_multiplier *= 1.2
 				dodge_cooldown_s *= 1.25
 			"fromsoftwatre_dodge":
 				dodge_invulnerable = true
 				dodge_cooldown_s *= 2.0
+			"full_auto":
+				full_auto_enabled = true
+				# Global fire-rate multiplier (lower is faster)
+				fire_cooldown_multiplier *= 0.6
+				# Tradeoff: slower bullets in full-auto
+				bullet_speed_multiplier *= 0.7
 
 func get_bullet_speed_multiplier() -> float:
 	return bullet_speed_multiplier
@@ -306,9 +320,18 @@ func get_bullet_speed_multiplier() -> float:
 func get_bullet_size_multiplier() -> float:
 	return bullet_size_multiplier
 
+func get_bullet_damage_multiplier() -> float:
+	return bullet_damage_multiplier
+
 func are_weapons_disabled() -> bool:
 	return weapons_disabled
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("deflect") and not _deflect_on_cooldown:
 		_spawn_and_activate_shield()
 		get_viewport().set_input_as_handled()
+
+func is_full_auto_enabled() -> bool:
+	return full_auto_enabled
+
+func get_fire_cooldown_multiplier() -> float:
+	return fire_cooldown_multiplier
