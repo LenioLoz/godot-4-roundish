@@ -23,7 +23,6 @@ var _mat: ShaderMaterial = null
 @export var rotation_offset_rad: float = 0.0
 
 func _ready() -> void:
-	process_mode = Node.PROCESS_MODE_ALWAYS
 	_resolve_refs()
 	_resolve_nodes()
 	set_active(false)
@@ -31,9 +30,6 @@ func _ready() -> void:
 		_area.connect("area_entered", _on_area_entered)
 	_setup_shader()
 
-func _process(_delta: float) -> void:
-	# Only move/rotate the shield sprite; avoid rotating the root to prevent double rotation
-	_follow_mouse_clamped()
 func set_active(v: bool) -> void:
 	_active = v
 	if _area:
@@ -116,48 +112,6 @@ func _resolve_nodes() -> void:
 	if sprite_path != NodePath(""):
 		_sprite = get_node_or_null(sprite_path) as CanvasItem
 
-func _follow_mouse_clamped() -> void:
-	if _player == null:
-		return
-	var new_pos = get_global_mouse_position()
-	if _melee_range:
-		var hitbox_global_transform = _melee_range.get_global_transform()
-		var hitbox_global_pos = hitbox_global_transform.get_origin()
-		var hitbox_scale = hitbox_global_transform.get_scale()
-		var top_left: Vector2
-		var bottom_right: Vector2
-		var initialized := false
-		if _melee_range.shape is RectangleShape2D:
-			var rect_shape := _melee_range.shape as RectangleShape2D
-			var hitbox_size = rect_shape.size * hitbox_scale
-			var half_size = hitbox_size / 2.0
-			top_left = hitbox_global_pos - half_size
-			bottom_right = hitbox_global_pos + half_size
-			initialized = true
-		elif _melee_range.shape is CapsuleShape2D:
-			var capsule_shape := _melee_range.shape as CapsuleShape2D
-			var radius = capsule_shape.radius * max(hitbox_scale.x, hitbox_scale.y)
-			var height = capsule_shape.height * hitbox_scale.y
-			var half_width = radius
-			var half_height = height / 2.0 + radius
-			top_left = hitbox_global_pos - Vector2(half_width, half_height)
-			bottom_right = hitbox_global_pos + Vector2(half_width, half_height)
-			initialized = true
-		elif _melee_range.shape is CircleShape2D:
-			var circle_shape := _melee_range.shape as CircleShape2D
-			var radius_c = circle_shape.radius * max(abs(hitbox_scale.x), abs(hitbox_scale.y))
-			var to_mouse = new_pos - hitbox_global_pos
-			if to_mouse.length() > radius_c:
-				new_pos = hitbox_global_pos + to_mouse.normalized() * radius_c
-		if initialized:
-			new_pos.x = clamp(new_pos.x, top_left.x, bottom_right.x)
-			new_pos.y = clamp(new_pos.y, top_left.y, bottom_right.y)
-	global_position = new_pos
-	# Rotate shield to face from player towards mouse
-	if _shield_node and _player:
-		# Point sprite from player -> shield (mouse-clamped) direction, with optional offset
-		var dir = (new_pos - _player.global_position)
-		_shield_node.rotation = dir.angle() + rotation_offset_rad
 
 func _setup_shader() -> void:
 	if _sprite == null:

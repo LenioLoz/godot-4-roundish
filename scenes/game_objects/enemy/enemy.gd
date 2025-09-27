@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-var _deflect_enabled: bool = false
+var _deflect_enabled: bool = true
 @export var deflect_enabled: bool:
 	set(value):
 		_deflect_enabled = value
