@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" uid="uid://csqbvabskmngn" path="res://scenes/weapons/bullets/rifle_bullet/rifle_bullet_body.tscn" id="2_yvonr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_x3bre"]
-size = Vector2(42.1797, 13.7507)
+size = Vector2(42.1797, 14.8055)
 
 [sub_resource type="Animation" id="Animation_eqr77"]
 length = 0.001
@@ -134,7 +134,7 @@ texture = ExtResource("1_tsq64")
 offset = Vector2(5, -2)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Ak47Body"]
-position = Vector2(5.51026, 1.48183)
+position = Vector2(5.51026, 1.98183)
 scale = Vector2(0.830269, 0.94805)
 shape = SubResource("RectangleShape2D_x3bre")
 

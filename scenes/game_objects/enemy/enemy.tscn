@@ -13,7 +13,7 @@ radius = 14.0357
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_hmixd"]
 shader = ExtResource("3_bt8cw")
-shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/tint = Color(0.6, 0.8, 1, 1)
 shader_parameter/desaturate = 0.0
 shader_parameter/flash = 0.0
 shader_parameter/flash_color = Vector3(1, 1, 1)
@@ -50,7 +50,6 @@ shape = SubResource("CircleShape2D_cigre")
 [node name="FlashOnHit" parent="." instance=ExtResource("1_jlij7")]
 
 [node name="DeflectComponent" parent="." instance=ExtResource("7_hmixd")]
-active = false
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="DeflectComponent"]
 visible = false

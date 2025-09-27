@@ -291,6 +291,7 @@ func apply_upgrades() -> void:
 	full_auto_enabled = false
 	fire_cooldown_multiplier = 1.0
 	# Apply all upgrades cumulatively
+	var want_shotgun := false
 	for upg in upgrades:
 		match upg.id:
 			"bullet_speed":
@@ -313,6 +314,14 @@ func apply_upgrades() -> void:
 				fire_cooldown_multiplier *= 0.6
 				# Tradeoff: slower bullets in full-auto
 				bullet_speed_multiplier *= 0.7
+			"shotgun":
+				want_shotgun = true
+
+	# Equip shotgun if requested by upgrades
+	if want_shotgun:
+		var wm = get_node_or_null("WeaponManager")
+		if wm and wm.has_method("equip_shotgun"):
+			wm.equip_shotgun()
 
 func get_bullet_speed_multiplier() -> float:
 	return bullet_speed_multiplier
