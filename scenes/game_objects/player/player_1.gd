@@ -63,6 +63,16 @@ func _ready() -> void:
 	add_child(_deflect_cd_timer)
 	_deflect_cd_timer.timeout.connect(_on_deflect_cd_timer_timeout)
 
+	# Ensure Ammo HUD exists in the scene tree
+	var hud_present := false
+	for c in get_tree().root.get_children():
+		if c is AmmoHUD:
+			hud_present = true
+			break
+	if not hud_present:
+		var hud := AmmoHUD.new()
+		get_tree().root.add_child(hud)
+
 
 
 func _physics_process(delta: float) -> void:
@@ -176,6 +186,9 @@ func _spawn_and_activate_shield() -> void:
 			weapon_layer.add_child(_active_shield)
 		else:
 			add_child(_active_shield)
+		# Always spawn shield exactly at player's position in world space
+		if _active_shield is Node2D:
+			(_active_shield as Node2D).global_position = global_position - Vector2(0, 13)
 		# Assign explicit paths so shield can resolve player and melee range reliably
 		var player_np: NodePath = _active_shield.get_path_to(self)
 		_active_shield.player_path = player_np

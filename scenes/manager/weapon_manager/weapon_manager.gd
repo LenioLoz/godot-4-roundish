@@ -89,4 +89,8 @@ func _equip_deflect_shield(weapon_layer: Node) -> void:
 		if deflect_shield:
 			var deflect_shield_instance = deflect_shield.instantiate() as Node2D
 			weapon_layer.add_child(deflect_shield_instance)
+			# Place the shield exactly on the player in world space
+			var p = get_parent() as Node2D
+			if p and deflect_shield_instance is Node2D:
+				deflect_shield_instance.global_position = p.global_position
 			
