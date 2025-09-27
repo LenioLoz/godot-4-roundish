@@ -9,7 +9,16 @@ var acquired_list: Array[Upgrade] = []
 const UPGRADE_SCREEN_SCENE := preload("res://scenes/ui/upgrade_s_creen.tscn")
 
 func _ready() -> void:
+	randomize()
 	add_to_group("upgrade_manager")
+	# Debug: log configured upgrade pool ids and max_quantity
+	var dbg_ids := []
+	for u in upgrade_pool:
+		if u != null and u.has_method("get"):
+			var iid = u.get("id")
+			var mq = u.get("max_quantity") if u.has_method("get") else -1
+			dbg_ids.append("%s(max=%s)" % [str(iid), str(mq)])
+	print("[UpgradeManager] Pool:", ", ".join(dbg_ids))
 
 func on_enemy_killed(_enemy: Node = null) -> void:
 	# Pick two upgrade options
@@ -41,20 +50,41 @@ func choose_upgrades(count: int) -> Array[Upgrade]:
 	var result: Array[Upgrade] = []
 	if upgrade_pool == null or upgrade_pool.is_empty():
 		return result
-	# Filter out upgrades that reached their max quantity
+	# Build available pool based on max_quantity
 	var pool: Array[Upgrade] = []
 	for u in upgrade_pool:
 		if _is_upgrade_available(u):
 			pool.append(u)
 	if pool.is_empty():
 		return result
-	# Simple Fisher-Yates shuffle
+	# Force-include shotgun when available
+	var sg: Upgrade = null
+	for u in pool:
+		var uid := ""
+		if u != null and u.has_method("get"):
+			var v = u.get("id")
+			if typeof(v) == TYPE_STRING:
+				uid = v
+		if uid == "shotgun":
+			sg = u
+			break
+	var picks_left = count
+	if sg != null and picks_left > 0:
+		result.append(sg)
+		picks_left -= 1
+		# Remove sg from pool
+		var filtered: Array[Upgrade] = []
+		for u2 in pool:
+			if u2 != sg:
+				filtered.append(u2)
+		pool = filtered
+	# Shuffle remaining pool
 	for i in range(pool.size() - 1, 0, -1):
 		var j = randi() % (i + 1)
 		var tmp = pool[i]
 		pool[i] = pool[j]
 		pool[j] = tmp
-	var n = min(count, pool.size())
+	var n = min(picks_left, pool.size())
 	for i in n:
 		result.append(pool[i])
 	return result

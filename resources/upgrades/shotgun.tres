@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3 uid="uid://i0qegghy7bp8"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_4dso8"]
+
+[resource]
+script = ExtResource("1_4dso8")
+id = "shotgun"
+max_quantity = 1
+name = "SHOTGUN!"
+description = "Your character equips shotgun
+
+"

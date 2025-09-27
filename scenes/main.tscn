@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3 uid="uid://b6ge3mglfy4y5"]
+[gd_scene load_steps=14 format=3 uid="uid://b6ge3mglfy4y5"]
 
 [ext_resource type="TileSet" uid="uid://cg7he5fd1dxx3" path="res://resources/tile_set.tres" id="1_0wfyh"]
 [ext_resource type="PackedScene" uid="uid://ducldkv2gp0f5" path="res://scenes/game_objects/player/player_1.tscn" id="1_o5qli"]
@@ -12,11 +12,12 @@
 [ext_resource type="Resource" uid="uid://wvinn6bvaue1" path="res://resources/upgrades/long_dodge.tres" id="6_jbj1t"]
 [ext_resource type="Resource" uid="uid://cp6eiir462sqb" path="res://resources/upgrades/heavy_bullets.tres" id="7_muem4"]
 [ext_resource type="Resource" uid="uid://bnpyoqbcd3mpl" path="res://resources/upgrades/full_auto.tres" id="8_dp3eg"]
+[ext_resource type="Resource" uid="uid://i0qegghy7bp8" path="res://resources/upgrades/shotgun.tres" id="9_sgupg"]
 
 [node name="Main" type="Node"]
 
 [node name="UpgradeManager" parent="." instance=ExtResource("4_upmgr")]
-upgrade_pool = Array[ExtResource("2_eb6dy")]([ExtResource("3_trceg"), ExtResource("4_a8y0u"), ExtResource("5_jkv2x"), ExtResource("6_jbj1t"), ExtResource("7_muem4"), ExtResource("8_dp3eg")])
+upgrade_pool = Array[ExtResource("2_eb6dy")]([ExtResource("3_trceg"), ExtResource("4_a8y0u"), ExtResource("5_jkv2x"), ExtResource("6_jbj1t"), ExtResource("7_muem4"), ExtResource("8_dp3eg"), ExtResource("9_sgupg")])
 
 [node name="AmmoHUD" type="CanvasLayer" parent="."]
 script = ExtResource("5_hud")

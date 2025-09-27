@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://ducldkv2gp0f5"]
+[gd_scene load_steps=15 format=3 uid="uid://ducldkv2gp0f5"]
 
 [ext_resource type="Script" uid="uid://csgkedym4x7nf" path="res://scenes/game_objects/player/player_1.gd" id="1_l4w3m"]
 [ext_resource type="PackedScene" uid="uid://dvi8e4pvnkwvv" path="res://scenes/manager/weapon_manager/weapon_manager.tscn" id="2_agrfn"]
@@ -9,6 +9,7 @@
 [ext_resource type="Shader" uid="uid://dssphhvhxxp0" path="res://scenes/shaders/flash_tint.gdshader" id="7_o74vj"]
 [ext_resource type="PackedScene" uid="uid://cbclon7fitu2v" path="res://scenes/weapons/shield_deflect/deflect_shield.tscn" id="8_shield"]
 [ext_resource type="PackedScene" uid="uid://d2s7e18aseul7" path="res://scenes/component/hurtbox_component/hurtbox_component.tscn" id="9_d8m6g"]
+[ext_resource type="PackedScene" uid="uid://brlb5qakf6rci" path="res://scenes/weapons/shotgun/shotgun.tscn" id="10_shotg"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_d8m6g"]
 shader = ExtResource("7_o74vj")
@@ -39,6 +40,7 @@ deflect_shield_scene = ExtResource("8_shield")
 ak47 = ExtResource("4_abcde")
 sword = ExtResource("3_ohbe6")
 deflect_shield = ExtResource("8_shield")
+shotgun = ExtResource("10_shotg")
 
 [node name="HealthComponent" parent="." instance=ExtResource("7_hc")]
 
