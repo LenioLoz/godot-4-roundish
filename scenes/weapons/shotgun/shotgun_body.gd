@@ -162,7 +162,7 @@ func _weapons_locked() -> bool:
 	return false
 
 func _arm_after_cooldown() -> void:
-	var cd := base_fire_cooldown_s
+	var cd := 0.4
 	if _fire_timer:
 		can_shoot = false
 		_fire_timer.start(cd)
