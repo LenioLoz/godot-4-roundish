@@ -28,6 +28,9 @@ func _unhandled_input(event: InputEvent) -> void:
 					if upg and upg.has_method("get") and upg.get("id") == "shotgun":
 						has_shotgun = true
 						break
+		if has_shotgun:
+			_equip_shotgun(weapon_layer)
+			get_viewport().set_input_as_handled()
 		if not has_shotgun:
 			_equip_ak47(weapon_layer)
 		get_viewport().set_input_as_handled()
@@ -45,6 +48,10 @@ func _equip_sword(weapon_layer: Node) -> void:
 	var ak47_node = weapon_layer.get_node_or_null("Ak47")
 	if is_instance_valid(ak47_node):
 		ak47_node.queue_free()
+		
+	var shotgun_node = weapon_layer.get_node_or_null("Shotgun")
+	if is_instance_valid(shotgun_node):
+		shotgun_node.queue_free()
 
 	var sword_node = weapon_layer.get_node_or_null("Sword")
 	if not is_instance_valid(sword_node):
