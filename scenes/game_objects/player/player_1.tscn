@@ -1,8 +1,9 @@
-[gd_scene load_steps=15 format=3 uid="uid://ducldkv2gp0f5"]
+[gd_scene load_steps=16 format=3 uid="uid://ducldkv2gp0f5"]
 
 [ext_resource type="Script" uid="uid://csgkedym4x7nf" path="res://scenes/game_objects/player/player_1.gd" id="1_l4w3m"]
 [ext_resource type="PackedScene" uid="uid://dvi8e4pvnkwvv" path="res://scenes/manager/weapon_manager/weapon_manager.tscn" id="2_agrfn"]
 [ext_resource type="PackedScene" uid="uid://clo2csrwyw7hm" path="res://scenes/weapons/sword/sword.tscn" id="3_ohbe6"]
+[ext_resource type="PackedScene" uid="uid://chj27mpl5wcln" path="res://scenes/component/knockback_component/knockback_component.tscn" id="3_q0f25"]
 [ext_resource type="PackedScene" uid="uid://d2ptwgm716svn" path="res://scenes/weapons/ak47/ak_47.tscn" id="4_abcde"]
 [ext_resource type="SpriteFrames" uid="uid://bctbpyoi1a53v" path="res://assets/new_sprite_frames.tres" id="5_agrfn"]
 [ext_resource type="PackedScene" uid="uid://5rkvw8by2tkc" path="res://scenes/component/healt_component/health_component.tscn" id="7_hc"]
@@ -37,6 +38,8 @@ script = ExtResource("1_l4w3m")
 deflect_shield_scene = ExtResource("8_shield")
 deflect_duration_s = 0.5
 
+[node name="KnockbackComponent" parent="." instance=ExtResource("3_q0f25")]
+
 [node name="WeaponManager" parent="." instance=ExtResource("2_agrfn")]
 ak47 = ExtResource("4_abcde")
 sword = ExtResource("3_ohbe6")
@@ -44,6 +47,7 @@ deflect_shield = ExtResource("8_shield")
 shotgun = ExtResource("10_shotg")
 
 [node name="HealthComponent" parent="." instance=ExtResource("7_hc")]
+max_health = 20.0
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 material = SubResource("ShaderMaterial_d8m6g")

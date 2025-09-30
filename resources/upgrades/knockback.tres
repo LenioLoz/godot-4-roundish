@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Upgrade" load_steps=2 format=3 uid="uid://bwc6elpakpvhl"]
+
+[ext_resource type="Script" uid="uid://ckev73d4ts4as" path="res://resources/upgrades/upgrade.gd" id="1_j3lks"]
+
+[resource]
+script = ExtResource("1_j3lks")
+id = "knockback"
+max_quantity = 1
+name = "Knockback"
+description = "You apply knockback on the enemy 
+"

@@ -116,6 +116,8 @@ func fire() -> void:
 	if bullet.has_method("set"):
 		bullet.set("damage_mul", dmg_mul)
 
+
+
 	# Spawn bullet in the current scene root so it doesn't inherit player movement
 	get_tree().current_scene.add_child(bullet)
 

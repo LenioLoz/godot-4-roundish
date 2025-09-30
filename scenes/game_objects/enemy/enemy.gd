@@ -1,6 +1,8 @@
 extends CharacterBody2D
 
-var _deflect_enabled: bool = true
+var _deflect_enabled: bool = false
+@export var spawn_protection_s: float = 1
+var _spawn_protecting: bool = false
 @export var deflect_enabled: bool:
 	set(value):
 		_deflect_enabled = value
@@ -24,13 +26,13 @@ func _ready() -> void:
 		health.died.connect(Callable(self, "_on_died"))
 	# Apply deflect toggle from export with hard safeguards
 	_apply_deflect_toggle()
-	# Ensure enemy Hurtbox is enabled so it can receive damage
-	# We force monitoring/monitorable to true regardless of Deflect state
-	# to avoid any timing/race where Deflect changes it during _ready.
+	# Spawn protection: temporarily disable Hurtbox, then enable after timer
 	var hb := get_node_or_null("HurtboxComponent") as Area2D
 	if hb != null:
-		hb.set_deferred("monitoring", true)
-		hb.set_deferred("monitorable", true)
+		_spawn_protecting = true
+		hb.set_deferred("monitoring", false)
+		hb.set_deferred("monitorable", false)
+		_begin_spawn_protection(hb)
 	# Ensure enemy sprite uses shared shader material without replacing existing refs
 	var spr := get_node_or_null("Sprite2D") as Sprite2D
 	if spr != null:
@@ -48,6 +50,7 @@ func _ready() -> void:
 		sm.set_shader_parameter("flash", 0.0)
 		sm.set_shader_parameter("flash_color", Vector3(1, 1, 1))
 		sm.set_shader_parameter("opacity", 1.0)
+
 
 func _on_died() -> void:
 	# Notify UpgradeManager about the kill so it can grant upgrades
@@ -90,8 +93,24 @@ func _apply_deflect_toggle() -> void:
 	else:
 		deflect.collision_layer = 0
 		deflect.collision_mask = 0
-	# Ensure enemy hurtbox remains enabled regardless of deflect
+	# Ensure enemy hurtbox state respects spawn protection window
 	var hb := get_node_or_null("HurtboxComponent") as Area2D
 	if hb != null:
+		if _spawn_protecting:
+			hb.set_deferred("monitoring", false)
+			hb.set_deferred("monitorable", false)
+		else:
+			hb.set_deferred("monitoring", true)
+			hb.set_deferred("monitorable", true)
+
+func _begin_spawn_protection(hb: Area2D) -> void:
+	var t := get_tree().create_timer(max(spawn_protection_s, 0.0))
+	await t.timeout
+	_spawn_protecting = false
+	if is_instance_valid(hb):
 		hb.set_deferred("monitoring", true)
 		hb.set_deferred("monitorable", true)
+
+func _physics_process(_delta: float) -> void:
+	# Centralized movement; components only modify velocity
+	move_and_slide()

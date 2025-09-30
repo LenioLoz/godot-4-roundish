@@ -345,6 +345,7 @@ func get_bullet_size_multiplier() -> float:
 func get_bullet_damage_multiplier() -> float:
 	return bullet_damage_multiplier
 
+
 func are_weapons_disabled() -> bool:
 	return weapons_disabled
 func _input(event: InputEvent) -> void:
