@@ -33,8 +33,6 @@ height = 26.0
 radius = 12.5
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_qhdl8"]
-radius = 5.0
-height = 18.0
 
 [node name="Player1" type="CharacterBody2D" groups=["player"]]
 collision_layer = 0
@@ -84,5 +82,5 @@ collision_mask = 3
 health_component = NodePath("../HealthComponent")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent"]
-position = Vector2(0, -13)
+position = Vector2(-1, -13)
 shape = SubResource("CapsuleShape2D_qhdl8")

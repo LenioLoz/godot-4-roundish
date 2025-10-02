@@ -4,6 +4,14 @@ const IP_ADDRESS: String = "localhost"
 const PORT: int = 42069
 
 var peer: ENetMultiplayerPeer
+var ip_address_config: String = IP_ADDRESS
+
+func set_ip_address(ip: String) -> void:
+	if ip == null:
+		return
+	ip_address_config = ip.strip_edges()
+	if ip_address_config == "":
+		ip_address_config = IP_ADDRESS
 
 func start_server() -> void:
 	peer = ENetMultiplayerPeer.new()
@@ -21,13 +29,13 @@ func start_server() -> void:
 
 func start_client() -> void:
 	peer = ENetMultiplayerPeer.new()
-	var err := peer.create_client(IP_ADDRESS, PORT)
+	var err := peer.create_client(ip_address_config, PORT)
 	if err != OK:
 		push_error("ENet client failed: %s" % [err])
 		return
 	multiplayer.multiplayer_peer = peer
 	_connect_multiplayer_signals()
-	print("[NET] Client connecting to ", IP_ADDRESS, ":", PORT)
+	print("[NET] Client connecting to ", ip_address_config, ":", PORT)
 
 func _connect_multiplayer_signals() -> void:
 	if not multiplayer.connected_to_server.is_connected(_on_connected_to_server):
