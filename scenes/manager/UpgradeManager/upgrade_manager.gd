@@ -102,6 +102,10 @@ func _apply_upgrade(chosen_upgrade: Upgrade) -> void:
 		current_upgrades[chosen_upgrade.id]["quantity"] += 1
 	acquired_list.append(chosen_upgrade)
 
+	# If shotgun is acquired, remove full_auto from future options
+	if chosen_upgrade.id == "shotgun":
+		upgrade_pool = upgrade_pool.filter(func(u: Upgrade): return u.id != "full_auto")
+
 	# If this upgrade reached its max quantity, remove it from the pool
 	var qty: int = int(current_upgrades[chosen_upgrade.id]["quantity"])
 	var maxq: int = 0

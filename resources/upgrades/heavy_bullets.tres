@@ -4,7 +4,8 @@
 
 [resource]
 script = ExtResource("1_vn7iv")
-id = "long_dodge"
-name = "Long Jump"
-description = "+Increase dodge lenght
--Increase dodge cooldown"
+id = "heavy_bullets"
+max_quantity = 0
+name = "Heavy Bullets"
+description = "Bullets do more damage
+"
