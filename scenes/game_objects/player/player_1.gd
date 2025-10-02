@@ -7,6 +7,7 @@ const DODGE_SPEED = 350
 var is_dodging = false
 var mouse_position: Vector2
 var look_position: Vector2
+var net_position: Vector2 = Vector2.ZERO
 @onready var _deflect: DeflectComponent = get_node_or_null("Deflect")
 @export var deflect_shield_scene: PackedScene
 var _active_shield: DeflectShield = null
@@ -28,6 +29,17 @@ var _deflect_on_cooldown: bool = false
 var weapons_disabled: bool = false
 var full_auto_enabled: bool = false
 var fire_cooldown_multiplier: float = 1.0
+
+# Visual tint base for this player (used by flash_tint shader)
+@export var base_tint: Color = Color(1, 1, 1, 1)
+
+var _last_pos: Vector2 = Vector2.ZERO
+
+
+func _enter_tree() -> void:
+	set_multiplayer_authority(name.to_int())
+	net_position = global_position
+
 
 func _ready() -> void:
 	# Connect the animation finished signal to handle the end of the dodge
@@ -76,6 +88,39 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if !is_multiplayer_authority():
+		# Smoothly interpolate toward replicated net_position
+		global_position = global_position.lerp(net_position, clamp(10.0 * delta, 0.0, 1.0))
+		var delta_pos := global_position - _last_pos
+		# Prefer facing by weapon aim if available; fallback to movement delta
+		var weapon_layer = get_node_or_null("Weapon")
+		var set_face := false
+		if weapon_layer:
+			var ak = weapon_layer.get_node_or_null("Ak47/Ak47Body")
+			if ak and ak.has_method("get"):
+				var rot = ak.get("rotation")
+				$AnimatedSprite2D.flip_h = cos(float(rot)) < 0.0
+				set_face = true
+			else:
+				var sg = weapon_layer.get_node_or_null("Shotgun/ShotgunBody")
+				if sg and sg.has_method("get"):
+					var rot2 = sg.get("rotation")
+					$AnimatedSprite2D.flip_h = cos(float(rot2)) < 0.0
+					set_face = true
+		if not set_face:
+			if delta_pos.x < 0:
+				$AnimatedSprite2D.flip_h = true
+			elif delta_pos.x > 0:
+				$AnimatedSprite2D.flip_h = false
+		if delta_pos.length() / max(delta, 0.0001) > 5.0:
+			if $AnimatedSprite2D.animation != "run":
+				$AnimatedSprite2D.play("run")
+		else:
+			if $AnimatedSprite2D.animation != "default" and not is_dodging:
+				$AnimatedSprite2D.play("default")
+		_last_pos = global_position
+		return
+
 
 	# aktualizuj pozycję myszy względem gracza
 	mouse_position = get_global_mouse_position()
@@ -90,6 +135,8 @@ func _physics_process(delta: float) -> void:
 	# Jeśli trwa unik – kontynuuj ruch z prędkością uniku
 	if is_dodging:
 		move_and_slide()
+		# Replicate authoritative position for smoothing on remotes
+		net_position = global_position
 		return
 
 	# --- Ruch normalny ---
@@ -99,38 +146,8 @@ func _physics_process(delta: float) -> void:
 	# --- Dodge ---
 	if Input.is_action_just_pressed("dodge"):
 		if direction != Vector2.ZERO and not _dodge_on_cooldown:
-			is_dodging = true
-			velocity = direction * (DODGE_SPEED * dodge_speed_multiplier)
-			$AnimatedSprite2D.play("dodge")
-			# Hide weapon layer during dodge
-			var weapon_layer = get_node_or_null("Weapon")
-			if weapon_layer:
-				weapon_layer.visible = false
-			# Flash effect during dodge
-			var sm := $AnimatedSprite2D.material as ShaderMaterial
-			if sm:
-				sm.set_shader_parameter("flash", 0.6)
-				sm.set_shader_parameter("flash_color", Color(0.1, 0.1, 0.1))
-				sm.set_shader_parameter("opacity", 0.7)
-			# Start fallback timer based on dodge animation duration
-			var duration := 0.25
-			var sf = $AnimatedSprite2D.sprite_frames
-			if sf and sf.has_animation("dodge"):
-				var frames = sf.get_frame_count("dodge")
-				var speed = sf.get_animation_speed("dodge")
-				if speed > 0:
-					duration = float(frames) / float(speed)
-			_dodge_timer.start(duration)
-			# Start dodge cooldown
-			_dodge_on_cooldown = true
-			_dodge_cd_timer.start(dodge_cooldown_s)
-			# Temporary i-frames by disabling Hurtbox monitoring
-			if dodge_invulnerable:
-				var hb := get_node_or_null("HurtboxComponent") as Area2D
-				if hb:
-					hb.set_deferred("monitoring", false)
-					hb.set_deferred("monitorable", false)
-			move_and_slide()
+			# Broadcast dodge start to all peers; apply locally as well
+			rpc("rpc_begin_dodge", direction.normalized())
 			return
 
 	# --- Normalna prędkość ---
@@ -144,6 +161,8 @@ func _physics_process(delta: float) -> void:
 		$AnimatedSprite2D.play("run")
 
 	move_and_slide()
+	# Replicate authoritative position for smoothing on remotes
+	net_position = global_position
 
 	# Deflect input handled in _input to avoid double triggers
 
@@ -161,7 +180,7 @@ func _on_animation_finished() -> void:
 
 func _on_dodge_timer_timeout() -> void:
 	if is_dodging:
-		_end_dodge()
+		rpc("rpc_end_dodge")
 
 func _on_dodge_cd_timeout() -> void:
 	_dodge_on_cooldown = false
@@ -170,58 +189,17 @@ func _on_dodge_cd_timeout() -> void:
 func _spawn_and_activate_shield() -> void:
 	if _deflect_on_cooldown:
 		return
-	# Spawn shield instance on demand; fallback to old deflect if needed
-	if deflect_shield_scene != null:
-		# Hide current weapons first, then ensure no leftover shields
-		weapons_disabled = true
-		_set_weapons_visible(false)
-		_remove_existing_shields()
-		# Clean up tracked instance if still present
-		if is_instance_valid(_active_shield):
-			_active_shield.queue_free()
-		_active_shield = deflect_shield_scene.instantiate() as DeflectShield
-		# Parent to Weapon layer if present for proper draw order
-		var weapon_layer = get_node_or_null("Weapon")
-		if weapon_layer:
-			weapon_layer.add_child(_active_shield)
-		else:
-			add_child(_active_shield)
-		# Always spawn shield exactly at player's position in world space
-		if _active_shield is Node2D:
-			(_active_shield as Node2D).global_position = global_position - Vector2(0, 13)
-		# Assign explicit paths so shield can resolve player and melee range reliably
-		var player_np: NodePath = _active_shield.get_path_to(self)
-		_active_shield.player_path = player_np
-		var mr = get_node_or_null("MeleeRange")
-		if mr:
-			_active_shield.melee_range_path = _active_shield.get_path_to(mr)
-		_active_shield.set_active(true)
+	# Authority schedules timers; broadcast activation to all peers
+	if is_multiplayer_authority():
 		_deflect_timer.start(deflect_duration_s)
 		_deflect_on_cooldown = true
 		_deflect_cd_timer.start(deflect_cooldown_s)
-		# Weapons already hidden; start shield duration
-	elif _deflect:
-		# Fallback legacy deflect
-		weapons_disabled = true
-		_set_weapons_visible(false)
-		_deflect.active = true
-		_deflect_timer.start(deflect_duration_s)
-		_deflect_on_cooldown = true
-		_deflect_cd_timer.start(deflect_cooldown_s)
+		rpc("rpc_set_deflect", true)
 
 
 func _on_deflect_timer_timeout() -> void:
-	if is_instance_valid(_active_shield):
-		_active_shield.set_active(false)
-		_active_shield.queue_free()
-		_active_shield = null
-	elif _deflect:
-		_deflect.active = false
-	# Ensure no stray shields remain (e.g., from other systems)
-	_remove_existing_shields()
-	# Unlock and show weapon layer again after shield ends
-	weapons_disabled = false
-	_set_weapons_visible(true)
+	# Broadcast deactivate to all peers
+	rpc("rpc_set_deflect", false)
 
 func _set_weapons_visible(v: bool) -> void:
 	var layer = get_node_or_null("Weapon")
@@ -280,7 +258,7 @@ func _ensure_sprite_shader() -> void:
 	if sm.shader == null:
 		sm.shader = load("res://scenes/shaders/flash_tint.gdshader")
 	# Defaults
-	sm.set_shader_parameter("tint", Color(1,1,1,1))
+	sm.set_shader_parameter("tint", base_tint)
 	sm.set_shader_parameter("desaturate", 0.0)
 	sm.set_shader_parameter("flash", 0.0)
 	sm.set_shader_parameter("flash_color", Color(1,1,1,1))
@@ -349,6 +327,8 @@ func get_bullet_damage_multiplier() -> float:
 func are_weapons_disabled() -> bool:
 	return weapons_disabled
 func _input(event: InputEvent) -> void:
+	if not is_multiplayer_authority():
+		return
 	if event.is_action_pressed("deflect") and not _deflect_on_cooldown:
 		_spawn_and_activate_shield()
 		get_viewport().set_input_as_handled()
@@ -358,3 +338,75 @@ func is_full_auto_enabled() -> bool:
 
 func get_fire_cooldown_multiplier() -> float:
 	return fire_cooldown_multiplier
+
+@rpc("any_peer", "call_local")
+func rpc_begin_dodge(direction: Vector2) -> void:
+	is_dodging = true
+	velocity = direction * (DODGE_SPEED * dodge_speed_multiplier)
+	$AnimatedSprite2D.play("dodge")
+	var weapon_layer = get_node_or_null("Weapon")
+	if weapon_layer:
+		weapon_layer.visible = false
+	var sm := $AnimatedSprite2D.material as ShaderMaterial
+	if sm:
+		sm.set_shader_parameter("flash", 0.6)
+		sm.set_shader_parameter("flash_color", Color(0.1, 0.1, 0.1))
+		sm.set_shader_parameter("opacity", 0.7)
+	var duration := 0.25
+	var sf = $AnimatedSprite2D.sprite_frames
+	if sf and sf.has_animation("dodge"):
+		var frames = sf.get_frame_count("dodge")
+		var speed = sf.get_animation_speed("dodge")
+		if speed > 0:
+			duration = float(frames) / float(speed)
+	if _dodge_timer:
+		_dodge_timer.start(duration)
+	_dodge_on_cooldown = true
+	if _dodge_cd_timer:
+		_dodge_cd_timer.start(dodge_cooldown_s)
+	if dodge_invulnerable:
+		var hb := get_node_or_null("HurtboxComponent") as Area2D
+		if hb:
+			hb.set_deferred("monitoring", false)
+			hb.set_deferred("monitorable", false)
+	move_and_slide()
+
+@rpc("any_peer", "call_local")
+func rpc_end_dodge() -> void:
+	_end_dodge()
+
+@rpc("any_peer", "call_local")
+func rpc_set_deflect(active: bool) -> void:
+	if active:
+		weapons_disabled = true
+		_set_weapons_visible(false)
+		_remove_existing_shields()
+		if is_instance_valid(_active_shield):
+			_active_shield.queue_free()
+		if deflect_shield_scene != null:
+			_active_shield = deflect_shield_scene.instantiate() as DeflectShield
+			var weapon_layer = get_node_or_null("Weapon")
+			if weapon_layer:
+				weapon_layer.add_child(_active_shield)
+			else:
+				add_child(_active_shield)
+			if _active_shield is Node2D:
+				(_active_shield as Node2D).global_position = global_position - Vector2(0, 13)
+			var player_np: NodePath = _active_shield.get_path_to(self)
+			_active_shield.player_path = player_np
+			var mr = get_node_or_null("MeleeRange")
+			if mr:
+				_active_shield.melee_range_path = _active_shield.get_path_to(mr)
+			_active_shield.set_active(true)
+		elif _deflect:
+			_deflect.active = true
+	else:
+		if is_instance_valid(_active_shield):
+			_active_shield.set_active(false)
+			_active_shield.queue_free()
+			_active_shield = null
+		elif _deflect:
+			_deflect.active = false
+		_remove_existing_shields()
+		weapons_disabled = false
+		_set_weapons_visible(true)

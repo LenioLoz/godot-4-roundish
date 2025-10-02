@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://ducldkv2gp0f5"]
+[gd_scene load_steps=17 format=3 uid="uid://ducldkv2gp0f5"]
 
 [ext_resource type="Script" uid="uid://csgkedym4x7nf" path="res://scenes/game_objects/player/player_1.gd" id="1_l4w3m"]
 [ext_resource type="PackedScene" uid="uid://dvi8e4pvnkwvv" path="res://scenes/manager/weapon_manager/weapon_manager.tscn" id="2_agrfn"]
@@ -11,6 +11,11 @@
 [ext_resource type="PackedScene" uid="uid://cbclon7fitu2v" path="res://scenes/weapons/shield_deflect/deflect_shield.tscn" id="8_shield"]
 [ext_resource type="PackedScene" uid="uid://d2s7e18aseul7" path="res://scenes/component/hurtbox_component/hurtbox_component.tscn" id="9_d8m6g"]
 [ext_resource type="PackedScene" uid="uid://brlb5qakf6rci" path="res://scenes/weapons/shotgun/shotgun.tscn" id="10_shotg"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_q0f25"]
+properties/0/path = NodePath(".:net_position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_d8m6g"]
 shader = ExtResource("7_o74vj")
@@ -37,6 +42,9 @@ collision_mask = 0
 script = ExtResource("1_l4w3m")
 deflect_shield_scene = ExtResource("8_shield")
 deflect_duration_s = 0.5
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_q0f25")
 
 [node name="KnockbackComponent" parent="." instance=ExtResource("3_q0f25")]
 
