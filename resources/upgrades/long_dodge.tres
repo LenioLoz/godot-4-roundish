@@ -4,7 +4,8 @@
 
 [resource]
 script = ExtResource("1_w2esb")
-id = "heavy_bullets"
-name = "Heavy Bullets"
-description = "Bullets do more damage
-"
+id = "long_dodge"
+max_quantity = 0
+name = "Long Jump"
+description = "+Increase dodge lenght
+-Increase dodge cooldown"

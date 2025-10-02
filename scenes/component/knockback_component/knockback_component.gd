@@ -80,11 +80,11 @@ func _physics_process(delta: float) -> void:
 		_host.velocity = _host.velocity.normalized() * max_speed
 
 func _has_knockback_upgrade() -> bool:
-	var ply = get_tree().get_first_node_in_group("player")
-	if ply == null:
+	var player = get_tree().get_first_node_in_group("player")
+	if player == null:
 		return false
-	if ply.has_method("get"):
-		var ups = ply.get("upgrades")
+	if player.has_method("get"):
+		var ups = player.get("upgrades")
 		if typeof(ups) == TYPE_ARRAY:
 			for upg in ups:
 				if upg and upg.has_method("get"):
