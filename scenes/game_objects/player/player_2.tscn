@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://6043lhp5lhl8"]
+[gd_scene load_steps=18 format=3 uid="uid://6043lhp5lhl8"]
 
 [ext_resource type="Script" uid="uid://csgkedym4x7nf" path="res://scenes/game_objects/player/player_1.gd" id="1_wx6f3"]
 [ext_resource type="PackedScene" uid="uid://cbclon7fitu2v" path="res://scenes/weapons/shield_deflect/deflect_shield.tscn" id="2_noleh"]
@@ -11,6 +11,7 @@
 [ext_resource type="Shader" uid="uid://dssphhvhxxp0" path="res://scenes/shaders/flash_tint.gdshader" id="9_k4hio"]
 [ext_resource type="SpriteFrames" uid="uid://bctbpyoi1a53v" path="res://assets/new_sprite_frames.tres" id="10_trfgu"]
 [ext_resource type="PackedScene" uid="uid://d2s7e18aseul7" path="res://scenes/component/hurtbox_component/hurtbox_component.tscn" id="11_b3j7q"]
+[ext_resource type="PackedScene" uid="uid://dyenr5xho7ynh" path="res://scenes/component/flash_on_hit/flash_on_hit.tscn" id="12_noleh"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_q0f25"]
 properties/0/path = NodePath(".:net_position")
@@ -86,3 +87,6 @@ health_component = NodePath("../HealthComponent")
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent"]
 position = Vector2(-1, -13)
 shape = SubResource("CapsuleShape2D_qhdl8")
+
+[node name="FlashOnHit" parent="." instance=ExtResource("12_noleh")]
+target_path = NodePath("AnimatedSprite2D")
