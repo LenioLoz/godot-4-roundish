@@ -156,6 +156,8 @@ func rpc_do_attack(dir: int) -> void:
 	sway_angle = 0.0
 	rotation = 0.0
 	attack_direction = dir
+	# Ensure sprite faces the attack direction during the entire attack
+	attack_scale_x = dir
 	if dir == 1:
 		$AnimationPlayer.play("attack")
 	else:
