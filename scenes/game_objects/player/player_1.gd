@@ -4,6 +4,7 @@ const MAX_SPEED = 150
 const ACCELERATION_SMOOTHING = 15
 const DODGE_SPEED = 350
 
+
 var is_dodging = false
 var mouse_position: Vector2
 var look_position: Vector2
@@ -75,44 +76,52 @@ func _ready() -> void:
 	add_child(_deflect_cd_timer)
 	_deflect_cd_timer.timeout.connect(_on_deflect_cd_timer_timeout)
 
-	# Ensure Ammo HUD exists in the scene tree
-	var hud_present := false
-	for c in get_tree().root.get_children():
-		if c is AmmoHUD:
-			hud_present = true
-			break
-	if not hud_present:
-		var hud := AmmoHUD.new()
-		get_tree().root.add_child(hud)
-
-
 
 func _physics_process(delta: float) -> void:
+	#Movement of other players in multiplayer
 	if !is_multiplayer_authority():
 		# Smoothly interpolate toward replicated net_position
 		global_position = global_position.lerp(net_position, clamp(10.0 * delta, 0.0, 1.0))
-		var delta_pos := global_position - _last_pos
+		var delta_position := global_position - _last_pos
 		# Prefer facing by weapon aim if available; fallback to movement delta
 		var weapon_layer = get_node_or_null("Weapon")
 		var set_face := false
 		if weapon_layer:
-			var ak = weapon_layer.get_node_or_null("Ak47/Ak47Body")
-			if ak and ak.has_method("get"):
-				var rot = ak.get("rotation")
-				$AnimatedSprite2D.flip_h = cos(float(rot)) < 0.0
-				set_face = true
-			else:
-				var sg = weapon_layer.get_node_or_null("Shotgun/ShotgunBody")
-				if sg and sg.has_method("get"):
-					var rot2 = sg.get("rotation")
-					$AnimatedSprite2D.flip_h = cos(float(rot2)) < 0.0
+			#getting rotation from ak_rifle and flipping character based on it
+			var shotgun := weapon_layer.get_node_or_null("Shotgun/ShotgunBody")
+			var ak_rifle := weapon_layer.get_node_or_null("Ak47/Ak47Body")
+			var sword := get_node_or_null("Weapon/Sword")
+			if ak_rifle and ak_rifle.has_method("get"):
+				var ak_rotation = ak_rifle.get("rotation")
+				if cos(float(ak_rotation)) < 0.0:
+					$AnimatedSprite2D.flip_h = true
 					set_face = true
+				else:
+					$AnimatedSprite2D.flip_h = false
+			#getting rotation from shotgun and flipping character based on it
+			if shotgun and shotgun.has_method("get"):
+					var shotgun_rotation = shotgun.get("rotation")
+					if cos(float(shotgun_rotation)) < 0.0:
+						$AnimatedSprite2D.flip_h = true
+						set_face = true
+					else:
+						$AnimatedSprite2D.flip_h = false
+			#getting position from sword and comparing it to player's positioion 
+			#and based on that flipping character 
+			if sword:
+				var sword_position_x = sword.global_position.x
+				if sword_position_x < $AnimatedSprite2D.global_position.x:
+					$AnimatedSprite2D.flip_h = true
+					set_face = true
+				else:
+					$AnimatedSprite2D.flip_h = false
+		#If we didn't flip character based on weapon we flip it based on it's movement
 		if not set_face:
-			if delta_pos.x < 0:
+			if delta_position.x < 0:
 				$AnimatedSprite2D.flip_h = true
-			elif delta_pos.x > 0:
+			elif delta_position.x > 0:
 				$AnimatedSprite2D.flip_h = false
-		if delta_pos.length() / max(delta, 0.0001) > 5.0:
+		if delta_position.length() / max(delta, 0.0001) > 5.0:
 			if $AnimatedSprite2D.animation != "run":
 				$AnimatedSprite2D.play("run")
 		else:

@@ -1,16 +1,90 @@
-extends Node
+[gd_scene load_steps=18 format=3 uid="uid://ducldkv2gp0f5"]
 
-const IP_ADDRESS: String = "localhost"
-const PORT: int = 42069
+[ext_resource type="Script" uid="uid://csgkedym4x7nf" path="res://scenes/game_objects/player/player_1.gd" id="1_l4w3m"]
+[ext_resource type="PackedScene" uid="uid://dvi8e4pvnkwvv" path="res://scenes/manager/weapon_manager/weapon_manager.tscn" id="2_agrfn"]
+[ext_resource type="PackedScene" uid="uid://clo2csrwyw7hm" path="res://scenes/weapons/sword/sword.tscn" id="3_ohbe6"]
+[ext_resource type="PackedScene" uid="uid://chj27mpl5wcln" path="res://scenes/component/knockback_component/knockback_component.tscn" id="3_q0f25"]
+[ext_resource type="PackedScene" uid="uid://d2ptwgm716svn" path="res://scenes/weapons/ak47/ak_47.tscn" id="4_abcde"]
+[ext_resource type="SpriteFrames" uid="uid://bctbpyoi1a53v" path="res://assets/new_sprite_frames.tres" id="5_agrfn"]
+[ext_resource type="PackedScene" uid="uid://5rkvw8by2tkc" path="res://scenes/component/healt_component/health_component.tscn" id="7_hc"]
+[ext_resource type="Shader" uid="uid://dssphhvhxxp0" path="res://scenes/shaders/flash_tint.gdshader" id="7_o74vj"]
+[ext_resource type="PackedScene" uid="uid://cbclon7fitu2v" path="res://scenes/weapons/shield_deflect/deflect_shield.tscn" id="8_shield"]
+[ext_resource type="PackedScene" uid="uid://d2s7e18aseul7" path="res://scenes/component/hurtbox_component/hurtbox_component.tscn" id="9_d8m6g"]
+[ext_resource type="PackedScene" uid="uid://brlb5qakf6rci" path="res://scenes/weapons/shotgun/shotgun.tscn" id="10_shotg"]
+[ext_resource type="PackedScene" uid="uid://dyenr5xho7ynh" path="res://scenes/component/flash_on_hit/flash_on_hit.tscn" id="12_fyuu7"]
 
-var peer: ENetMultiplayerPeer
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_q0f25"]
+properties/0/path = NodePath(".:net_position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
-func start_server() ->void:
-	peer = ENetMultiplayerPeer.new()
-	peer.create_server(PORT,32)
-	multiplayer.multiplayer_peer = peer
-	
-func start_client() ->void:
-	peer = ENetMultiplayerPeer.new()
-	peer.create_client(IP_ADDRESS, PORT)
-	multiplayer.multiplayer_peer = peer
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_d8m6g"]
+shader = ExtResource("7_o74vj")
+shader_parameter/tint = Color(1, 1, 1, 1)
+shader_parameter/desaturate = 0.0
+shader_parameter/flash = 0.0
+shader_parameter/flash_color = Vector3(1, 1, 1)
+shader_parameter/opacity = 1.0
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_svpgk"]
+radius = 4.0
+height = 26.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_agrfn"]
+radius = 12.5
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_qhdl8"]
+
+[node name="Player1" type="CharacterBody2D" groups=["player"]]
+collision_layer = 0
+collision_mask = 0
+script = ExtResource("1_l4w3m")
+deflect_shield_scene = ExtResource("8_shield")
+deflect_duration_s = 0.5
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_q0f25")
+
+[node name="KnockbackComponent" parent="." instance=ExtResource("3_q0f25")]
+
+[node name="WeaponManager" parent="." instance=ExtResource("2_agrfn")]
+ak47 = ExtResource("4_abcde")
+sword = ExtResource("3_ohbe6")
+deflect_shield = ExtResource("8_shield")
+shotgun = ExtResource("10_shotg")
+
+[node name="HealthComponent" parent="." instance=ExtResource("7_hc")]
+max_health = 20.0
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+material = SubResource("ShaderMaterial_d8m6g")
+position = Vector2(0, -16)
+sprite_frames = ExtResource("5_agrfn")
+animation = &"dodge"
+autoplay = "default"
+frame_progress = 0.471786
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(0, -13)
+shape = SubResource("CapsuleShape2D_svpgk")
+
+[node name="MeleeRange" type="CollisionShape2D" parent="."]
+visible = false
+position = Vector2(-1, -13)
+scale = Vector2(1.2, 1.2)
+shape = SubResource("CircleShape2D_agrfn")
+
+[node name="Weapon" type="Node2D" parent="." groups=["weaponlayer"]]
+
+[node name="HurtboxComponent" parent="." node_paths=PackedStringArray("health_component") instance=ExtResource("9_d8m6g")]
+collision_layer = 3
+collision_mask = 3
+health_component = NodePath("../HealthComponent")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxComponent"]
+position = Vector2(-1, -13)
+shape = SubResource("CapsuleShape2D_qhdl8")
+
+[node name="FlashOnHit" parent="." instance=ExtResource("12_fyuu7")]
+target_path = NodePath("..")

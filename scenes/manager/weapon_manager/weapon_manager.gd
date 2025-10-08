@@ -24,7 +24,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("select_weapon_2"):
 		# If player has shotgun upgrade, block switching to AK47
 		var parent_node = get_parent()
-		var has_shotgun := false
+		var has_shotgun := true
 		if parent_node and parent_node.has_method("get"):
 			var ups = parent_node.get("upgrades")
 			if typeof(ups) == TYPE_ARRAY:
@@ -36,10 +36,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			# Broadcast equip to all peers (and apply locally)
 			rpc("rpc_equip", "shotgun")
 			get_viewport().set_input_as_handled()
-		if not has_shotgun:
-			# Broadcast equip to all peers (and apply locally)
-			rpc("rpc_equip", "ak47")
-		get_viewport().set_input_as_handled()
+		#if not has_shotgun:
+			## Broadcast equip to all peers (and apply locally)
+			#rpc("rpc_equip", "ak47")
+		#get_viewport().set_input_as_handled()
 	elif  event.is_action_pressed("deflect"):
 		# Broadcast equip to all peers (and apply locally)
 		rpc("rpc_equip", "deflect")
