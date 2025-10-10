@@ -17,6 +17,7 @@ var sway_angle = 0.0
 const MAX_SWAY_ANGLE = 0.6
 const SWAY_SPEED = 20.0
 const SWAY_DECAY = 5.0
+@export var remote_lerp_speed: float = 30
 var _remote_pos: Vector2 = Vector2.ZERO
 var _remote_rot: float = 0.0
 var _remote_scale_x: float = 1.0
@@ -110,10 +111,12 @@ func _process(delta):
 		return
 	# Remote peer: apply replicated follow state when not attacking
 	if state == State.FOLLOWING:
-		global_position = _remote_pos
-		rotation = _remote_rot
-		$Sprite2D.scale.x = _remote_scale_x
-		hitbox_collision.position.x = _remote_hitbox_x
+		#Interpolating sword position to make the sword movement look smooth
+		var interpolation_function: float = clampf(remote_lerp_speed * delta, 0.0, 1.0)
+		global_position = global_position.lerp(_remote_pos, interpolation_function)
+		rotation = lerp_angle(rotation, _remote_rot, interpolation_function)
+		$Sprite2D.scale.x = lerpf($Sprite2D.scale.x, _remote_scale_x, interpolation_function)
+		hitbox_collision.position.x = lerpf(hitbox_collision.position.x, _remote_hitbox_x, interpolation_function)
 		return
 	elif state == State.ATTACKING:
 		$Sprite2D.scale.x = attack_scale_x
@@ -124,7 +127,7 @@ func _on_animation_finished(anim_name):
 	if anim_name == "attack" or anim_name == "swing_right": 
 		state = State.FOLLOWING
 
-@rpc("any_peer", "call_local")
+@rpc("any_peer", "call_local", "unreliable")
 func rpc_set_follow_state(pos: Vector2, rot: float, scale_x: float, hitbox_x: float) -> void:
 	# Only accept updates from the owning player's authority (or local call)
 	var sender_id := multiplayer.get_remote_sender_id()
