@@ -9,6 +9,7 @@ var is_dodging = false
 var mouse_position: Vector2
 var look_position: Vector2
 var net_position: Vector2 = Vector2.ZERO
+var position_synchronizer_accumulator := 0.0
 @onready var _deflect: DeflectComponent = get_node_or_null("Deflect")
 @export var deflect_shield_scene: PackedScene
 var _active_shield: DeflectShield = null
@@ -34,7 +35,7 @@ var fire_cooldown_multiplier: float = 1.0
 # Visual tint base for this player (used by flash_tint shader)
 @export var base_tint: Color = Color(1, 1, 1, 1)
 
-var _last_pos: Vector2 = Vector2.ZERO
+var _last_position: Vector2 = Vector2.ZERO
 
 
 func _enter_tree() -> void:
@@ -82,7 +83,7 @@ func _physics_process(delta: float) -> void:
 	if !is_multiplayer_authority():
 		# Smoothly interpolate toward replicated net_position
 		global_position = global_position.lerp(net_position, clamp(10.0 * delta, 0.0, 1.0))
-		var delta_position := global_position - _last_pos
+		var delta_position := global_position - _last_position
 		# Prefer facing by weapon aim if available; fallback to movement delta
 		var weapon_layer = get_node_or_null("Weapon")
 		var set_face := false
@@ -115,37 +116,38 @@ func _physics_process(delta: float) -> void:
 					set_face = true
 				else:
 					$AnimatedSprite2D.flip_h = false
-		#If we didn't flip character based on weapon we flip it based on it's movement
-		if not set_face:
-			if delta_position.x < 0:
-				$AnimatedSprite2D.flip_h = true
-			elif delta_position.x > 0:
-				$AnimatedSprite2D.flip_h = false
+		#Makes character play run animation when in multiplayer checks the distance coverd by a player
+		#and sets an animation for it 
 		if delta_position.length() / max(delta, 0.0001) > 5.0:
 			if $AnimatedSprite2D.animation != "run":
 				$AnimatedSprite2D.play("run")
 		else:
 			if $AnimatedSprite2D.animation != "default" and not is_dodging:
 				$AnimatedSprite2D.play("default")
-		_last_pos = global_position
+		_last_position = global_position
 		return
 
 
-	# aktualizuj pozycję myszy względem gracza
+	# Get the mouse position according to player position
 	mouse_position = get_global_mouse_position()
 	look_position = mouse_position - global_position
 
-	# Flipowanie tylko w osi X (horyzontalnie)
+	# Flip the player based on the look position
 	if look_position.x < 0:
 		$AnimatedSprite2D.flip_h = true   # lewo
 	else:
 		$AnimatedSprite2D.flip_h = false  # prawo
 
-	# Jeśli trwa unik – kontynuuj ruch z prędkością uniku
+	# If dodge is active stay in dodge state
 	if is_dodging:
 		move_and_slide()
 		# Replicate authoritative position for smoothing on remotes
 		net_position = global_position
+		# Throttled broadcast of position for remotes
+		position_synchronizer_accumulator += delta
+		if position_synchronizer_accumulator >= 0.015:
+			position_synchronizer_accumulator = 0.0
+			rpc("rpc_set_net_position", global_position)
 		return
 
 	# --- Ruch normalny ---
@@ -172,6 +174,11 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	# Replicate authoritative position for smoothing on remotes
 	net_position = global_position
+	#Update player net position whenever delta sum  is bigger rhan 0.015
+	position_synchronizer_accumulator += delta
+	if position_synchronizer_accumulator >= 0.015:
+		position_synchronizer_accumulator = 0.0
+		rpc("rpc_set_net_position", global_position)
 
 	# Deflect input handled in _input to avoid double triggers
 
@@ -347,6 +354,19 @@ func is_full_auto_enabled() -> bool:
 
 func get_fire_cooldown_multiplier() -> float:
 	return fire_cooldown_multiplier
+
+@rpc("any_peer", "call_local", "unreliable")
+func rpc_set_net_position(pos: Vector2) -> void:
+	var sender_id := multiplayer.get_remote_sender_id()
+	var expected_id := 0
+	var parent_node := get_parent()
+	if parent_node and parent_node.has_method("get_multiplayer_authority"):
+		expected_id = parent_node.get_multiplayer_authority()
+	else:
+		expected_id = get_multiplayer_authority()
+	if sender_id != 0 and sender_id != expected_id:
+		return
+	net_position = pos
 
 @rpc("any_peer", "call_local")
 func rpc_begin_dodge(direction: Vector2) -> void:

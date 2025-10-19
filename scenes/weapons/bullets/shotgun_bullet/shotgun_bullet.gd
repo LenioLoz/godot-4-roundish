@@ -6,7 +6,7 @@ extends CharacterBody2D
 var pos:Vector2
 var rotat:float
 var dir:float
-var speed = 2.5
+var speed = 150
 var direction = Vector2.RIGHT
 @export var base_damage: int = 10
 var damage_mul: float = 1.0
@@ -23,12 +23,10 @@ func _ready() -> void:
 	add_to_group("projectile")
 	# Remove bullet when it hits a hurtbox (enemy)
 	hitbox_component.area_entered.connect(_on_hitbox_area_entered)
-	
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta: float) -> void:
-	velocity = direction * speed
-	move_and_collide(velocity)
+	position += transform.x * speed * delta
 
 
 func on_timer_timeout():

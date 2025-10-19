@@ -131,38 +131,35 @@ func fire() -> void:
 	var spread: float = deg_to_rad(pellet_spread_deg)
 	# Start with raw spawn (no mirroring)
 	var spawn_pos_raw: Vector2 = $BulletPosition.global_position
-	# Compute a provisional base angle from click (preferred) or current mouse
-	var base_angle: float
+	# Compute a provisional click angle from queued aim or current mouse
+	var click_angle: float
 	if _has_queued_aim and _queued_aim_dir != Vector2.ZERO:
-		base_angle = _queued_aim_dir.angle()
+		click_angle = _queued_aim_dir.angle()
 	else:
-		base_angle = (get_global_mouse_position() - spawn_pos_raw).angle()
-	# Mirror BulletPosition's local Y when aiming left to match sprite flipping
+		click_angle = (get_global_mouse_position() - spawn_pos_raw).angle()
+	# Mirror local muzzle Y when aiming left to match sprite framing, then convert to world
 	var local_muzzle: Vector2 = $BulletPosition.position
-	var facing_left: bool = cos(base_angle) < 0.0
-	if facing_left:
+	if cos(click_angle) < 0.0:
 		local_muzzle.y = -local_muzzle.y
 	var spawn_pos: Vector2 = to_global(local_muzzle)
-	# Safe forward offset so pellets spawn slightly ahead of the muzzle
-	var forward: Vector2 = Vector2.RIGHT.rotated(base_angle)
-	spawn_pos += forward * 10.0
-	# If we didn't have a queued aim, refine base angle using the mirrored spawn
-	if not _has_queued_aim or _queued_aim_dir == Vector2.ZERO:
-		base_angle = (get_global_mouse_position() - spawn_pos).angle()
+	# Small forward offset so pellets spawn ahead of the muzzle along click angle
+	spawn_pos += Vector2.RIGHT.rotated(click_angle) * 10.0
+	# Keep click_angle as the single source; do not re-evaluate after mirroring
 	var count: int = max(1, bullet_count)
 	var specs: Array = []
 	if count == 1:
-		specs.append({
-			"pos": spawn_pos,
-			"rot": base_angle,
+			specs.append({
+				"pos": spawn_pos,
+				"rot": click_angle,
 			"speed_mul": speed_mul,
 			"size_mul": size_mul,
 			"dmg_mul": dmg_mul,
 		})
 	else:
-		var increment = spread / (bullet_count - 1)
+		var increment: float = (spread / float(count - 1)) if count > 1 else 0.0
+		var start: float = click_angle - spread * 0.5
 		for i in range(count):
-			var rot_i = (global_rotation) + increment * i - spread / 2.0
+			var rot_i: float = start + increment * i
 			specs.append({
 				"pos": spawn_pos,
 				"rot": rot_i,
@@ -182,7 +179,7 @@ func rpc_play_shoot_anim() -> void:
 	if anim_player and anim_player.has_animation("shoot_animation"):
 		anim_player.play("shoot_animation")
 
-@rpc("any_peer", "call_local")
+@rpc("any_peer", "call_local", "unreliable")
 func rpc_spawn_shotgun_pellets(specs: Array) -> void:
 	# Only accept spawns from the owning player's authority (or local call)
 	var sender_id := multiplayer.get_remote_sender_id()
