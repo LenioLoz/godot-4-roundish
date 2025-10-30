@@ -58,6 +58,11 @@ shotgun = ExtResource("7_fxjf5")
 [node name="HealthComponent" parent="." instance=ExtResource("8_yyv4d")]
 max_health = 20.0
 
+[node name="Camera2D" type="Camera2D" parent="."]
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
+current = false
+
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 material = SubResource("ShaderMaterial_d8m6g")
 position = Vector2(0, -16)

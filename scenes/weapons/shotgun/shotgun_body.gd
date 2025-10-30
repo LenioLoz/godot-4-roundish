@@ -203,9 +203,15 @@ func rpc_spawn_shotgun_pellets(specs: Array) -> void:
 		var dmg_mul: float = float(s.get("dmg_mul", 1.0))
 		var bullet = bullet_path.instantiate()
 		bullet.pos = spawn_pos
-		bullet.dir = rot
+		bullet.dir = Vector2.RIGHT.rotated(rot)
 		bullet.rotat = rot
 		bullet.speed = float(bullet.speed) * speed_mul
+		# Ustaw właściciela pocisku (dla anty self-hit)
+		if bullet.has_method("set"):
+			bullet.set("owner_id", expected_id)
+		var hb := bullet.get_node_or_null("MyHitboxComponent") as HitboxComponent
+		if hb:
+			hb.owner_id = expected_id
 		if bullet is Node2D:
 			(bullet as Node2D).scale *= Vector2(size_mul, size_mul)
 		if bullet.has_method("set"):

@@ -81,7 +81,7 @@ func _process(delta: float) -> void:
 	direction = get_global_mouse_position() - global_position
 	look_at(get_global_mouse_position())
 
-	# flipowanie broni w zależności od strony
+	# flip broni zależnie od strony
 	if direction.x < 0:
 		$Sprite2D.flip_v = true
 		$Sprite2D.position.x = 2
@@ -167,6 +167,12 @@ func rpc_spawn_rifle_bullet(spawn_pos: Vector2, rot: float, speed_mul: float, si
 	bullet.pos = spawn_pos
 	bullet.rotat = rot
 	bullet.speed = float(bullet.speed) * speed_mul
+	# Assign bullet owner to player's authority (prevents self-hit)
+	if bullet.has_method("set"):
+		bullet.set("owner_id", expected_id)
+	var hb := bullet.get_node_or_null("MyHitboxComponent") as HitboxComponent
+	if hb:
+		hb.owner_id = expected_id
 	if bullet is Node2D:
 		(bullet as Node2D).scale *= Vector2(size_mul, size_mul)
 	if bullet.has_method("set"):
@@ -233,3 +239,4 @@ func _has_authority() -> bool:
 	if ply and ply.has_method("is_multiplayer_authority"):
 		return ply.is_multiplayer_authority()
 	return is_multiplayer_authority()
+

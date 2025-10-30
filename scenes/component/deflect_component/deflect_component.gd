@@ -12,7 +12,6 @@ class_name DeflectComponent
 @export var flash_amount: float = 0.7
 @export var flash_duration: float = 0.2
 
-# Active state visual (constant tint when deflect is active)
 var _active: bool = false
 @export var active: bool:
 	set(value):
@@ -21,14 +20,13 @@ var _active: bool = false
 		_active = value
 		_apply_active_tint()
 		_apply_hurtbox_block()
-		# In the editor, avoid deferred calls to prevent progress dialog warnings
 		if Engine.is_editor_hint():
 			return
-		# Enable/disable collision monitoring based on active state
 		set_deferred("monitoring", _active)
 		set_deferred("monitorable", _active)
 	get:
 		return _active
+
 @export var active_tint: Color = Color(0.6, 0.8, 1.0, 1.0)
 @export var inactive_tint: Color = Color(1, 1, 1, 1)
 
@@ -37,74 +35,17 @@ var _mat: ShaderMaterial = null
 var _last_reflect: Dictionary = {}
 var _hurtbox: Area2D = null
 
-# Editable hitbox exports
-@export var use_custom_shape: bool = false
-@export var custom_shape: Shape2D
-@export_enum("Circle", "Rectangle", "Capsule") var shape_type: int = 0
-@export var circle_radius: float = 18.0
-@export var rect_size: Vector2 = Vector2(36, 18)
-@export var capsule_radius: float = 10.0
-@export var capsule_height: float = 20.0
-
 func _ready() -> void:
 	_resolve_target()
 	_setup_shader()
-	_apply_shape_settings()
 	_apply_active_tint()
-	# In the editor, avoid enabling runtime collision and signal logic
 	if Engine.is_editor_hint():
 		return
-	# Start with monitoring depending on current active state
 	set_deferred("monitoring", active)
 	set_deferred("monitorable", active)
 	connect("area_entered", Callable(self, "_on_area_entered"))
 	_resolve_hurtbox()
 	_apply_hurtbox_block()
-
-## set/get handled inline on `active` property above
-
-func _resolve_hurtbox() -> void:
-	var host = owner if owner != null else get_parent()
-	if host != null:
-		_hurtbox = host.get_node_or_null("HurtboxComponent") as Area2D
-
-func _get_collision_shape() -> CollisionShape2D:
-	# Rely on shape provided in the scene; avoid creating children during setup
-	return get_node_or_null("CollisionShape2D") as CollisionShape2D
-
-func _apply_shape_settings() -> void:
-	var cs := _get_collision_shape()
-	if cs == null:
-		return
-	if use_custom_shape and custom_shape != null:
-		cs.shape = custom_shape
-		return
-	match shape_type:
-		0:
-			var s := cs.shape as CircleShape2D
-			if s == null:
-				s = CircleShape2D.new()
-				cs.shape = s
-			s.radius = circle_radius
-		1:
-			var r := cs.shape as RectangleShape2D
-			if r == null:
-				r = RectangleShape2D.new()
-				cs.shape = r
-			r.size = rect_size
-		2:
-			var c := cs.shape as CapsuleShape2D
-			if c == null:
-				c = CapsuleShape2D.new()
-				cs.shape = c
-			c.radius = capsule_radius
-			c.height = capsule_height
-		_:
-			pass
-
-#func _notification(what):
-	#if Engine.is_editor_hint() and what == NOTIFICATION_EDITOR_PROPERTY_CHANGED:
-		#_apply_shape_settings()
 
 func _resolve_target() -> void:
 	if target_path != NodePath(""):
@@ -127,18 +68,16 @@ func _setup_shader() -> void:
 		sm.shader = load("res://scenes/shaders/flash_tint.gdshader")
 	_mat = sm
 	_mat.set_shader_parameter("flash", 0.0)
-	# Ensure base tint is initialized
 	_mat.set_shader_parameter("tint", active_tint if active else inactive_tint)
 
 func _on_area_entered(area: Area2D) -> void:
-	# Only react when deflect is active
 	if not active:
 		return
-	# Projectiles
-	if affects_projectiles and _try_reflect_projectile(area):
+	# Always try to reflect projectiles when active (ignore affects_projectiles flag)
+	if _try_reflect_projectile(area):
 		_do_flash()
 		return
-	# Melee
+	# Optional: still allow melee parry according to flag
 	if affects_melee and _try_parry_melee(area):
 		_do_flash()
 		return
@@ -149,24 +88,43 @@ func _try_reflect_projectile(area: Area2D) -> bool:
 		return false
 	if not projectile_owner.is_in_group("projectile"):
 		return false
-	var id = projectile_owner.get_instance_id()
-	var now = Time.get_ticks_msec()
-	if _last_reflect.has(id) and int(now) - int(_last_reflect[id]) < reflect_cooldown_ms:
-		return true
-	_last_reflect[id] = now
-	# Try to flip bullet direction (robust property access)
-	var _dir_val = null
-	if projectile_owner.has_method("get"):
-		_dir_val = projectile_owner.get("dir")
-	if typeof(_dir_val) == TYPE_FLOAT or typeof(_dir_val) == TYPE_INT:
-		projectile_owner.set("dir", float(_dir_val) + PI)
-	# Optional: rotate sprite if present (not required for logic)
-	if projectile_owner.has_method("set_rotation"):
-		projectile_owner.set_rotation(projectile_owner.rotation + PI)
+
+	# --- Nie liczymy/nie używamy PID — odbijamy każdy pocisk bez transferu właściciela ---
+
+	# Jeśli pocisk potrafi obsłużyć RPC odbicia, wywołaj je (z zachowaniem obecnego ownera)
+	if projectile_owner.has_method("rpc_reflect"):
+		# Jeżeli rpc_reflect oczekuje argumentu new_owner_id, podajemy obecnego ownera, 
+		# aby nie zmieniać właściciela (możesz też zmodyfikować rpc_reflect, by przyjmowało brak argumentu).
+		var current_owner_id := 0
+		if projectile_owner.has_method("get") and projectile_owner.has("owner_id"):
+			current_owner_id = int(projectile_owner.get("owner_id"))
+		projectile_owner.rpc("rpc_reflect", current_owner_id)
+	else:
+		# Local fallback: tylko odwróć kierunek / rotację / velocity bez zmiany ownera
+		if projectile_owner is Node2D:
+			(projectile_owner as Node2D).rotation += PI
+		if projectile_owner.has_method("get") and projectile_owner.has_method("set"):
+			var d = projectile_owner.get("dir") if projectile_owner.has("dir") else null
+			if d != null and (typeof(d) == TYPE_FLOAT or typeof(d) == TYPE_INT):
+				# jeżeli dir jest kątem (float), dodaj PI
+				projectile_owner.set("dir", float(d) + PI)
+			var r = projectile_owner.get("rotat") if projectile_owner.has("rotat") else null
+			if r != null and (typeof(r) == TYPE_FLOAT or typeof(r) == TYPE_INT):
+				projectile_owner.set("rotat", float(r) + PI)
+			var vel = projectile_owner.get("velocity") if projectile_owner.has("velocity") else null
+			if vel != null and typeof(vel) == TYPE_VECTOR2:
+				projectile_owner.set("velocity", -vel)
+			var dir_v = projectile_owner.get("direction") if projectile_owner.has("direction") else null
+			if dir_v != null and typeof(dir_v) == TYPE_VECTOR2:
+				projectile_owner.set("direction", -dir_v)
+
+		# NIE przenosimy owner_id ani nie dotykamy hitbox.owner_id
+		# e.g. nie wykonujemy: projectile_owner.set("owner_id", pid)
+
 	return true
 
+
 func _try_parry_melee(area: Area2D) -> bool:
-	# Only parry non-projectile hitboxes
 	if not (area is HitboxComponent):
 		return false
 	var attacker = area.get_parent()
@@ -174,15 +132,13 @@ func _try_parry_melee(area: Area2D) -> bool:
 		return false
 	if attacker.is_in_group("projectile"):
 		return false
-	# Avoid self-damage: if attacker shares player group with host, skip
 	var host = owner if owner != null else get_parent()
 	if host != null and host.is_in_group("player"):
-		var node = attacker
+		var node: Node = attacker
 		while node != null:
 			if node.is_in_group("player"):
 				return false
 			node = node.get_parent()
-	# Find HealthComponent upwards from attacker
 	var cur = attacker
 	while cur != null:
 		var hc = cur.get_node_or_null("HealthComponent") as HealthComponent
@@ -210,19 +166,20 @@ func _apply_active_tint() -> void:
 	_mat.set_shader_parameter("tint", active_tint if active else inactive_tint)
 
 func _notification(_what):
-	# Refresh preview in editor without relying on editor-only constants
 	if Engine.is_editor_hint():
-		_apply_shape_settings()
 		_apply_active_tint()
 
+func _resolve_hurtbox() -> void:
+	var host = owner if owner != null else get_parent()
+	if host != null:
+		_hurtbox = host.get_node_or_null("HurtboxComponent") as Area2D
+
 func _apply_hurtbox_block() -> void:
-	# Do not toggle hurtbox while in editor to prevent editor-time collisions
 	if Engine.is_editor_hint():
 		return
 	if _hurtbox == null:
 		_resolve_hurtbox()
 	if _hurtbox == null:
 		return
-	# When deflect is active, disable hurtbox so it doesn't take damage
 	_hurtbox.set_deferred("monitoring", not active)
 	_hurtbox.set_deferred("monitorable", not active)

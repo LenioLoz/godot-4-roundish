@@ -26,6 +26,11 @@ var _remote_hitbox_x: float = 0.0
 func _ready():
 	hitbox_collision.set_deferred("disabled", true)
 	hitbox_component.damage = 5
+	# Set hitbox owner to player's authority to avoid self-hit
+	var pid := 0
+	if player and player.has_method("get_multiplayer_authority"):
+		pid = int(player.get_multiplayer_authority())
+	hitbox_component.owner_id = pid
 	if has_node("AnimationPlayer"):
 		$AnimationPlayer.animation_finished.connect(_on_animation_finished)
 	else:

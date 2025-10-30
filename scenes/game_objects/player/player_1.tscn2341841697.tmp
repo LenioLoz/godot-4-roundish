@@ -81,8 +81,3 @@ shape = SubResource("CapsuleShape2D_qhdl8")
 
 [node name="FlashOnHit" parent="." instance=ExtResource("12_fyuu7")]
 target_path = NodePath("AnimatedSprite2D")
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position_smoothing_enabled = true
-position_smoothing_speed = 6.0
-current = false

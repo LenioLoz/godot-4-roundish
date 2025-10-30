@@ -6,8 +6,9 @@ extends CharacterBody2D
 var pos:Vector2
 var rotat:float
 var dir:float
-var speed = 200
-@export var base_damage: int = 5
+var speed = 150
+var direction = Vector2.RIGHT
+@export var base_damage: int = 10
 var damage_mul: float = 1.0
 var owner_id: int = 0
 
@@ -19,6 +20,7 @@ func _ready() -> void:
 	hitbox_component.owner_id = owner_id
 	global_position = pos
 	global_rotation = rotat
+	direction = Vector2.RIGHT.rotated(rotat)
 	$Timer.start()
 	$Timer.timeout.connect(on_timer_timeout)
 	add_to_group("projectile")
@@ -27,11 +29,10 @@ func _ready() -> void:
 
 func _apply_reflect(new_owner_id: int) -> void:
 	# Flip movement by 180 degrees and transfer ownership
-	# Angle-based movement
-	dir = float(dir) + PI
+	rotat = float(rotat) + PI
 	rotation += PI
-	# Small nudge along new facing to avoid overlap
-	global_position += transform.x * 2.0
+	# Flip direction vector used by physics step
+	direction = -direction
 	# Transfer ownership for anti self-hit
 	owner_id = new_owner_id
 	if hitbox_component:
@@ -40,14 +41,10 @@ func _apply_reflect(new_owner_id: int) -> void:
 @rpc("any_peer", "call_local")
 func rpc_reflect(new_owner_id: int) -> void:
 	_apply_reflect(new_owner_id)
-	
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _physics_process(delta: float) -> void:
-	var motion := Vector2(speed, 0).rotated(dir) * delta
-	var collision := move_and_collide(motion)
-	if collision:
-		pass
+	position += transform.x * speed * delta
 
 
 func on_timer_timeout():
@@ -57,3 +54,4 @@ func _on_hitbox_area_entered(area: Area2D) -> void:
 	if area is HurtboxComponent:
 		# Only remove the projectile; Hurtbox handles applying damage
 		queue_free()
+
