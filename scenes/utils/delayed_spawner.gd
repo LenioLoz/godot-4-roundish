@@ -6,6 +6,7 @@ var pos: Vector2
 var rot: float
 var parent_path: NodePath = NodePath("/root/Main")
 var delay: float = 0.2
+var name_override: StringName = ""
 
 func _ready() -> void:
 	var timer := get_tree().create_timer(delay)
@@ -15,9 +16,10 @@ func _ready() -> void:
 		parent = get_tree().current_scene
 	if scene != null and parent != null:
 		var inst = scene.instantiate()
+		if String(name_override) != "":
+			inst.name = name_override
 		if inst is Node2D:
 			(inst as Node2D).global_position = pos
 			(inst as Node2D).global_rotation = rot
 		parent.add_child(inst)
 	queue_free()
-

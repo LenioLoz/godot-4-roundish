@@ -20,6 +20,66 @@ func _ready() -> void:
 			dbg_ids.append("%s(max=%s)" % [str(iid), str(mq)])
 	print("[UpgradeManager] Pool:", ", ".join(dbg_ids))
 
+# Public: prompt 3 upgrades for a freshly spawned player
+func request_initial_upgrades(ply: Node) -> void:
+	if ply == null:
+		return
+	# Pick 3 upgrades in 3 consecutive rounds (3 options each round)
+	var picked_counts: Dictionary = {}
+	get_tree().paused = true
+	for i in 3:
+		var options := _choose_upgrades_for_player(3, picked_counts)
+		if options.is_empty():
+			break
+		var screen := _show_upgrade_screen(options)
+		var selected: Upgrade = await screen.accepted
+		if is_instance_valid(screen):
+			screen.queue_free()
+		if selected != null:
+			# Track per-player pick counts (does not affect global pool)
+			var uid := selected.id if selected.has_method("get") else ""
+			if not picked_counts.has(uid):
+				picked_counts[uid] = 0
+			picked_counts[uid] = int(picked_counts[uid]) + 1
+			# Apply upgrade only to this player
+			if is_instance_valid(ply) and ply.has_method("add_upgrade"):
+				ply.add_upgrade(selected)
+			print("[UpgradeManager] Initial grant ->", selected.id)
+	get_tree().paused = false
+
+func _choose_upgrades_for_player(count: int, picked_counts: Dictionary) -> Array[Upgrade]:
+	var result: Array[Upgrade] = []
+	if upgrade_pool == null or upgrade_pool.is_empty():
+		return result
+	# Build pool respecting max_quantity per this player's session picks
+	var pool: Array[Upgrade] = []
+	for u in upgrade_pool:
+		if u == null:
+			continue
+		var uid: String = u.id if u.has_method("get") else ""
+		var maxq: int = 0
+		if u.has_method("get"):
+			var v = u.get("max_quantity")
+			if typeof(v) == TYPE_INT:
+				maxq = v
+		var curr: int = 0
+		if uid != "" and picked_counts.has(uid):
+			curr = int(picked_counts[uid])
+		if maxq <= 0 or curr < maxq:
+			pool.append(u)
+	if pool.is_empty():
+		return result
+	# Shuffle and take up to `count`
+	for i in range(pool.size() - 1, 0, -1):
+		var j = randi() % (i + 1)
+		var tmp = pool[i]
+		pool[i] = pool[j]
+		pool[j] = tmp
+	var n = min(count, pool.size())
+	for i in n:
+		result.append(pool[i])
+	return result
+
 func on_enemy_killed(_enemy: Node = null) -> void:
 	# Pick two upgrade options
 	var options := choose_upgrades(2)
@@ -57,34 +117,13 @@ func choose_upgrades(count: int) -> Array[Upgrade]:
 			pool.append(u)
 	if pool.is_empty():
 		return result
-	# Force-include shotgun when available
-	var sg: Upgrade = null
-	for u in pool:
-		var uid := ""
-		if u != null and u.has_method("get"):
-			var v = u.get("id")
-			if typeof(v) == TYPE_STRING:
-				uid = v
-		if uid == "shotgun":
-			sg = u
-			break
-	var picks_left = count
-	if sg != null and picks_left > 0:
-		result.append(sg)
-		picks_left -= 1
-		# Remove sg from pool
-		var filtered: Array[Upgrade] = []
-		for u2 in pool:
-			if u2 != sg:
-				filtered.append(u2)
-		pool = filtered
-	# Shuffle remaining pool
+	# Shuffle pool uniformly and take up to `count` items
 	for i in range(pool.size() - 1, 0, -1):
 		var j = randi() % (i + 1)
 		var tmp = pool[i]
 		pool[i] = pool[j]
 		pool[j] = tmp
-	var n = min(picks_left, pool.size())
+	var n = min(count, pool.size())
 	for i in n:
 		result.append(pool[i])
 	return result
