@@ -88,6 +88,42 @@ func _ready() -> void:
 		elif cam.has_method("clear_current") and not is_local:
 			cam.clear_current()
 
+	# Connect death -> respawn
+	var hc := get_node_or_null("HealthComponent")
+	if hc and not hc.died.is_connected(_on_player_died):
+		hc.died.connect(_on_player_died)
+
+	# After spawn, prompt the local authority to pick 3 upgrades
+	if is_multiplayer_authority():
+		# Equip default AK47 as starting weapon via RPC (replicated)
+		var wm = get_node_or_null("WeaponManager")
+		if wm != null and wm.has_method("rpc"):
+			wm.rpc("rpc_equip", "ak47")
+		# Then prompt for 3 upgrades (only on first spawn)
+		if upgrades.is_empty():
+			var mgr = get_tree().get_first_node_in_group("upgrade_manager")
+			if mgr != null and mgr.has_method("request_initial_upgrades"):
+				mgr.request_initial_upgrades(self)
+
+func _on_player_died() -> void:
+	# Schedule respawn of this player instance with same name at current position
+	var pos := global_position
+	var rot := global_rotation
+	var scene_path := scene_file_path
+	var scene: PackedScene = null
+	if scene_path != "":
+		scene = load(scene_path)
+	else:
+		scene = load("res://scenes/game_objects/player/player_1.tscn")
+	var spawner := DelayedSpawner.new()
+	spawner.scene = scene
+	spawner.pos = pos
+	spawner.rot = rot
+	spawner.delay = 1.0
+	spawner.parent_path = NodePath("/root/Main")
+	spawner.name_override = StringName(String(name))
+	get_tree().root.add_child(spawner)
+
 
 func _physics_process(delta: float) -> void:
 	#Movement of other players in multiplayer
@@ -336,10 +372,10 @@ func apply_upgrades() -> void:
 				want_shotgun = true
 
 	# Equip shotgun if requested by upgrades
-	if want_shotgun:
-		var wm = get_node_or_null("WeaponManager")
-		if wm and wm.has_method("equip_shotgun"):
-			wm.equip_shotgun()
+		if want_shotgun:
+			var wm = get_node_or_null("WeaponManager")
+			if wm:
+				wm.rpc("rpc_equip", "shotgun")
 
 func get_bullet_speed_multiplier() -> float:
 	return bullet_speed_multiplier
