@@ -120,4 +120,16 @@ func _attacker_has_knockback(area: Area2D) -> bool:
 							var idv = upg.get("id")
 							if typeof(idv) == TYPE_STRING and idv == "knockback":
 								return true
+func _has_knockback_upgrade() -> bool:
+	var player = get_tree().get_first_node_in_group("player")
+	if player == null:
+		return false
+	if player.has_method("get"):
+		var ups = player.get("upgrades")
+		if typeof(ups) == TYPE_ARRAY:
+			for upg in ups:
+				if upg and upg.has_method("get"):
+					var idv = upg.get("id")
+					if typeof(idv) == TYPE_STRING and idv == "knockback":
+						return true
 	return false
