@@ -42,8 +42,8 @@ func is_active() -> bool:
 	return _active
 
 func _on_area_entered(area: Area2D) -> void:
-	# Always reflect projectiles when they touch the shield area
-	if affects_projectiles and _try_reflect_projectile(area):
+	# Always reflect projectiles when they touch the shield area (ignore flag)
+	if _try_reflect_projectile(area):
 		_do_flash()
 		return
 	# Melee parry only while the shield is active
@@ -59,18 +59,49 @@ func _try_reflect_projectile(area: Area2D) -> bool:
 		return false
 	if not projectile_owner.is_in_group("projectile"):
 		return false
-	var id = projectile_owner.get_instance_id()
-	var now = Time.get_ticks_msec()
-	if _last_reflect.has(id) and int(now) - int(_last_reflect[id]) < reflect_cooldown_ms:
-		return true
-	_last_reflect[id] = now
+	# No cooldown suppression: reflect every projectile deterministically
+	# Flip projectile travel direction for various bullet implementations
+	var had_angle := false
+	# Angle stored in `dir` (float, AK47 bullets)
 	var _dir_val = null
 	if projectile_owner.has_method("get"):
 		_dir_val = projectile_owner.get("dir")
 	if typeof(_dir_val) == TYPE_FLOAT or typeof(_dir_val) == TYPE_INT:
 		projectile_owner.set("dir", float(_dir_val) + PI)
+		had_angle = true
+	# Angle stored in `rotat` (float, shotgun bullets)
+	var _rotat_val = null
+	if projectile_owner.has_method("get"):
+		_rotat_val = projectile_owner.get("rotat")
+	if typeof(_rotat_val) == TYPE_FLOAT or typeof(_rotat_val) == TYPE_INT:
+		projectile_owner.set("rotat", float(_rotat_val) + PI)
+		had_angle = true
 	if projectile_owner.has_method("set_rotation"):
 		projectile_owner.set_rotation(projectile_owner.rotation + PI)
+		had_angle = true
+	# Vector-based movement fallbacks
+	if projectile_owner.has_method("get") and projectile_owner.has_method("set"):
+		var vel = projectile_owner.get("velocity")
+		if typeof(vel) == TYPE_VECTOR2:
+			projectile_owner.set("velocity", -vel)
+			had_angle = true
+		var direction_v = projectile_owner.get("direction")
+		if typeof(direction_v) == TYPE_VECTOR2:
+			projectile_owner.set("direction", -direction_v)
+			had_angle = true
+	# Assign reflected projectile to the player so it can hurt the original shooter
+	var pid := 0
+	if _player and _player.has_method("get_multiplayer_authority"):
+		pid = int(_player.get_multiplayer_authority())
+	# Prefer authoritative reflect via RPC on the bullet if available
+	if projectile_owner.has_method("rpc_reflect"):
+		projectile_owner.rpc("rpc_reflect", pid)
+	else:
+		if projectile_owner.has_method("set"):
+			projectile_owner.set("owner_id", pid)
+		var hb := projectile_owner.get_node_or_null("MyHitboxComponent") as HitboxComponent
+		if hb:
+			hb.owner_id = pid
 	return true
 
 func _try_parry_melee(area: Area2D) -> bool:
@@ -111,7 +142,6 @@ func _resolve_nodes() -> void:
 		_area = get_node_or_null(area_path) as Area2D
 	if sprite_path != NodePath(""):
 		_sprite = get_node_or_null(sprite_path) as CanvasItem
-
 
 func _setup_shader() -> void:
 	if _sprite == null:

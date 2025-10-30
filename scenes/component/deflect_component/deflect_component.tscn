@@ -1,7 +1,15 @@
-[gd_scene load_steps=2 format=3 uid="uid://2myv67uf3e0o"]
+[gd_scene load_steps=3 format=3 uid="uid://2myv67uf3e0o"]
 
 [ext_resource type="Script" uid="uid://bnwy45mr8ig0y" path="res://scenes/component/deflect_component/deflect_component.gd" id="1_1"]
 
+[sub_resource type="CircleShape2D" id="CircleShape2D_deflect"]
+radius = 18.0
+
 [node name="DeflectComponent" type="Area2D"]
+collision_mask = 3
 script = ExtResource("1_1")
+reflect_nudge = null
 active = true
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_deflect")

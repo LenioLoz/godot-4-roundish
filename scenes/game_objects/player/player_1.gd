@@ -77,6 +77,17 @@ func _ready() -> void:
 	add_child(_deflect_cd_timer)
 	_deflect_cd_timer.timeout.connect(_on_deflect_cd_timer_timeout)
 
+	# Make per-player camera active only for local authority (Godot 4-safe)
+	var cam := get_node_or_null("Camera2D") as Camera2D
+	if cam:
+		var is_local := is_multiplayer_authority()
+		if cam.has_method("set_enabled"):
+			cam.set_enabled(is_local)
+		elif cam.has_method("make_current") and is_local:
+			cam.make_current()
+		elif cam.has_method("clear_current") and not is_local:
+			cam.clear_current()
+
 
 func _physics_process(delta: float) -> void:
 	#Movement of other players in multiplayer
@@ -427,6 +438,11 @@ func rpc_set_deflect(active: bool) -> void:
 			if mr:
 				_active_shield.melee_range_path = _active_shield.get_path_to(mr)
 			_active_shield.set_active(true)
+			# While shield is active, disable Hurtbox to prevent any accidental self-hits
+			var hb := get_node_or_null("HurtboxComponent") as Area2D
+			if hb:
+				hb.set_deferred("monitoring", false)
+				hb.set_deferred("monitorable", false)
 		elif _deflect:
 			_deflect.active = true
 	else:
@@ -439,3 +455,8 @@ func rpc_set_deflect(active: bool) -> void:
 		_remove_existing_shields()
 		weapons_disabled = false
 		_set_weapons_visible(true)
+		# Re-enable Hurtbox after shield ends
+		var hb2 := get_node_or_null("HurtboxComponent") as Area2D
+		if hb2:
+			hb2.set_deferred("monitoring", true)
+			hb2.set_deferred("monitorable", true)

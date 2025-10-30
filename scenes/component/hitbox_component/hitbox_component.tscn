@@ -4,3 +4,4 @@
 
 [node name="MyHitboxComponent" type="Area2D"]
 script = ExtResource("1_xq8ts")
+collision_layer = 2
